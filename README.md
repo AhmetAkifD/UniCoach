@@ -1,0 +1,58 @@
+# UniCoach
+
+YKS ve LGS'ye hazırlanan öğrenciler için yardım sistemi: **konu anlatımı** (YouTube videoları), **soru bankası**, **geçmiş sorulardan deneme sınavı** ve **YKS tercih** modülleri. Web sitesi ve mobil uygulama aynı backend'i kullanır.
+
+## Hızlı başlangıç (Docker)
+
+Gereken tek şey [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+
+```bash
+docker compose up --build
+```
+
+| Servis | Adres |
+|---|---|
+| Web sitesi | http://localhost:3000 (e-posta adresinizi girin; kayıtlı değilse kayıt adımı açılır) |
+| Tasarım rehberi | http://localhost:3000/tasarim (giriş gerekir) |
+| API sağlık kontrolü | http://localhost:4000/api/health |
+
+İlk derleme birkaç dakika sürebilir. Veritabanı tabloları API açılırken otomatik oluşturulur ve başlangıçta boştur. Kayıt olan kullanıcılar PostgreSQL'e yazılır; veriler `db-data` volume'unda tutulduğu için konteynerler durdurulup yeniden başlatılınca kaybolmaz.
+
+- Durdurmak: `docker compose down`, veriler korunur.
+- Tüm verileri silip sıfırdan başlamak: `docker compose down -v`
+
+**Hesap rolleri:** Kayıt olan herkes *Öğrenci* olur. *Admin* hesabı oluşturmak için e-posta alanına `admin` yazın, kayıt adımında şifre olarak da `admin` girin. Bu kısayol yalnızca ders projesinde test kolaylığı içindir.
+
+Oturum belirteçleri `JWT_SECRET` ile imzalanır. Compose'ta yerel kullanım için bir varsayılan değer vardır; gerçek bir sunucuda `JWT_SECRET=... docker compose up` ile değiştirin.
+
+## Geliştirme
+
+Gereksinimler: Node.js 22+ ve Docker (yalnızca veritabanı için).
+
+```bash
+npm install
+cp .env.example apps/api/.env
+docker compose -f docker-compose.dev.yml up -d   # PostgreSQL → localhost:5432
+npm run db:migrate                                # tabloları oluşturur
+npm run dev                                       # API :4000, web :3000
+```
+
+## Mimari
+
+```
+apps/
+  api/      NestJS + Prisma + PostgreSQL — REST API (/api/*)
+  web/      Next.js + Tailwind — web sitesi
+  mobile/   Expo (React Native) — mobil uygulama (planlandı)
+packages/
+  shared/   Ortak tipler, API istemcisi, net/puan hesapları
+  design/   Tasarım token'ları (renk, yazı tipi, boşluk) — web ve mobil için tek kaynak
+docs/
+  DESIGN.md Tasarım sistemi
+```
+
+Web ve mobil uygulama iş mantığı içermez; ikisi de `packages/shared` içindeki istemciyle aynı API'yi kullanır. Görsel tutarlılık için ikisi de `packages/design` token'larını okur. Ayrıntılar için [docs/DESIGN.md](docs/DESIGN.md) dosyasına bakın.
+
+## Teknolojiler
+
+TypeScript · NestJS 11 · Prisma 6 · PostgreSQL 18 · Next.js 16 · React 19 · Tailwind CSS 4 · Expo · Docker Compose

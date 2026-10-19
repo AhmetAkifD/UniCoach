@@ -1,0 +1,26 @@
+@import "tailwindcss";
+/* Renk, yazı tipi, yarıçap ve gölge token'ları — kaynak: packages/design/src/tokens.ts, kurallar: docs/DESIGN.md */
+@import "@unicoach/design/theme.css";
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    @apply bg-bg font-sans text-base text-text;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-focus-ring ring-offset-2 ring-offset-bg;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

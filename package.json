@@ -1,0 +1,30 @@
+{
+  "name": "unicoach",
+  "version": "0.1.0",
+  "private": true,
+  "description": "UniCoach — YKS/LGS öğrenci yardım sistemi (web + mobil, ortak API)",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build:packages": "npm run build -w @unicoach/design -w @unicoach/shared",
+    "build": "npm run build:packages && npm run build -w @unicoach/api -w @unicoach/web",
+    "dev": "npm run build:packages && concurrently -n api,web -c blue,magenta \"npm run dev -w @unicoach/api\" \"npm run dev -w @unicoach/web\"",
+    "typecheck": "npm run build:packages && npm run typecheck --workspaces --if-present",
+    "db:migrate": "npm run db:migrate -w @unicoach/api",
+    "db:generate": "npm run db:generate -w @unicoach/api"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6",
+    "typescript": "~5.9.3"
+  },
+  "allowScripts": {
+    "@prisma/client@6.19.3": true,
+    "@prisma/engines@6.19.3": true,
+    "prisma@6.19.3": true
+  }
+}
