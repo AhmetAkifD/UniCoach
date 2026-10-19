@@ -1,0 +1,25 @@
+{
+  "name": "@unicoach/design",
+  "version": "0.1.0",
+  "private": true,
+  "description": "UniCoach tasarım token'ları — web ve mobil için tek kaynak",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./theme.css": {
+      "style": "./dist/theme.css",
+      "default": "./dist/theme.css"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/build-css.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}

@@ -1,0 +1,20 @@
+# Yerel geliştirme için yalnızca PostgreSQL'i başlatır (localhost:5432).
+# API ve web'i `npm run dev` ile çalıştırırken kullanın:
+#   docker compose -f docker-compose.dev.yml up -d
+name: unicoach-dev
+
+services:
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: unicoach
+      POSTGRES_PASSWORD: unicoach
+      POSTGRES_DB: unicoach
+    volumes:
+      - db-dev-data:/var/lib/postgresql
+    ports:
+      - "5432:5432"
+
+volumes:
+  db-dev-data:
