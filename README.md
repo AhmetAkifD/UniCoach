@@ -12,11 +12,18 @@ docker compose up --build
 
 | Servis | Adres |
 |---|---|
-| Web sitesi | http://localhost:3000 |
-| Tasarım rehberi | http://localhost:3000/tasarim |
+| Web sitesi | http://localhost:3000 (e-posta adresinizi girin; kayıtlı değilse kayıt adımı açılır) |
+| Tasarım rehberi | http://localhost:3000/tasarim (giriş gerekir) |
 | API sağlık kontrolü | http://localhost:4000/api/health |
 
-İlk derleme birkaç dakika sürebilir. Veritabanı tabloları API açılırken otomatik oluşturulur. Durdurmak için `Ctrl+C`, verileri de silmek için `docker compose down -v` kullanılır.
+İlk derleme birkaç dakika sürebilir. Veritabanı tabloları API açılırken otomatik oluşturulur ve başlangıçta boştur. Kayıt olan kullanıcılar PostgreSQL'e yazılır; veriler `db-data` volume'unda tutulduğu için konteynerler durdurulup yeniden başlatılınca kaybolmaz.
+
+- Durdurmak: `docker compose down`, veriler korunur.
+- Tüm verileri silip sıfırdan başlamak: `docker compose down -v`
+
+**Hesap rolleri:** Kayıt olan herkes *Öğrenci* olur. *Admin* hesabı oluşturmak için e-posta alanına `admin` yazın, kayıt adımında şifre olarak da `admin` girin. Bu kısayol yalnızca ders projesinde test kolaylığı içindir.
+
+Oturum belirteçleri `JWT_SECRET` ile imzalanır. Compose'ta yerel kullanım için bir varsayılan değer vardır; gerçek bir sunucuda `JWT_SECRET=... docker compose up` ile değiştirin.
 
 ## Geliştirme
 

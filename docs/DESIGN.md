@@ -22,27 +22,29 @@ Kabul tarihi: 2026-10-19
 
 Bileşenlerde **yalnızca anlamsal (semantic) renkler** kullanılır, ham palet kullanılmaz. Koyu tema bu değişkenlerin değeriyle otomatik gelir.
 
+**Koyu tema nötr koyu gridir** (2026-10-19 kararı): zemin, yüzey ve kenarlar renk tonu taşımaz. Renk yalnızca vurgu öğelerinde (birincil buton, link, durum renkleri) görünür; `primarySoft`/`accentSoft` bile gri ağırlıklıdır.
+
 | Token | Tailwind sınıfı | Açık | Koyu | Kullanım |
 |---|---|---|---|---|
-| `bg` | `bg-bg` | `#F8FAFC` | `#0B1020` | Sayfa zemini |
-| `surface` | `bg-surface` | `#FFFFFF` | `#121831` | Kart, modal, header |
-| `surfaceMuted` | `bg-surface-muted` | `#F1F5F9` | `#1A2140` | İkincil alan, input zemini, iz (track) |
-| `border` | `border-border` | `#E2E8F0` | `#263056` | Kart/ayraç çizgisi |
-| `borderStrong` | `border-border-strong` | `#CBD5E1` | `#475569` | Input kenarı, hover |
-| `text` | `text-text` | `#0F172A` | `#E2E8F0` | Ana metin |
-| `textMuted` | `text-text-muted` | `#64748B` | `#94A3B8` | Açıklama, etiket |
-| `textSubtle` | `text-text-subtle` | `#94A3B8` | `#64748B` | Yer tutucu, pasif |
+| `bg` | `bg-bg` | `#F8FAFC` | `#121212` | Sayfa zemini |
+| `surface` | `bg-surface` | `#FFFFFF` | `#1A1A1A` | Kart, modal, header |
+| `surfaceMuted` | `bg-surface-muted` | `#F1F5F9` | `#242424` | İkincil alan, input zemini, iz (track) |
+| `border` | `border-border` | `#E2E8F0` | `#2E2E2E` | Kart/ayraç çizgisi |
+| `borderStrong` | `border-border-strong` | `#CBD5E1` | `#3D3D3D` | Input kenarı, hover |
+| `text` | `text-text` | `#0F172A` | `#EDEDED` | Ana metin |
+| `textMuted` | `text-text-muted` | `#64748B` | `#A3A3A3` | Açıklama, etiket |
+| `textSubtle` | `text-text-subtle` | `#94A3B8` | `#737373` | Yer tutucu, pasif |
 | `primary` | `bg-primary` / `text-primary` | `#4F46E5` | `#818CF8` | Birincil buton, link, aktif sekme |
 | `primaryHover` | `bg-primary-hover` | `#4338CA` | `#A5B4FC` | Hover/pressed |
-| `primarySoft` | `bg-primary-soft` | `#EEF2FF` | `#1E1B4B` | Seçili öğe zemini, ikincil buton |
+| `primarySoft` | `bg-primary-soft` | `#EEF2FF` | `#262633` | Seçili öğe zemini, ikincil buton |
 | `primarySoftText` | `text-primary-soft-text` | `#4338CA` | `#C7D2FE` | `primarySoft` üzerindeki metin |
-| `onPrimary` | `text-on-primary` | `#FFFFFF` | `#0B1020` | `primary` üzerindeki metin |
+| `onPrimary` | `text-on-primary` | `#FFFFFF` | `#121212` | `primary` üzerindeki metin |
 | `accent` / `accentSoft` | `bg-accent` | `#8B5CF6` | `#A78BFA` | Vurgu, rozet, grafik ikinci seri |
 | `focusRing` | `ring-focus-ring` | `#A5B4FC` | `#6366F1` | Klavye odağı |
-| `success` / `successSoft` | `text-success` | `#15803D` | `#22C55E` | Doğru cevap, tamamlandı |
-| `warning` / `warningSoft` | `text-warning` | `#B45309` | `#F59E0B` | Boş bırakılan, süre azaldı |
-| `danger` / `dangerSoft` | `text-danger` | `#DC2626` | `#EF4444` | Yanlış cevap, hata, silme |
-| `info` / `infoSoft` | `text-info` | `#0369A1` | `#0EA5E9` | Bilgi notu |
+| `success` / `successSoft` | `text-success` | `#15803D` | `#4ADE80` | Doğru cevap, tamamlandı |
+| `warning` / `warningSoft` | `text-warning` | `#B45309` | `#FBBF24` | Boş bırakılan, süre azaldı |
+| `danger` / `dangerSoft` | `text-danger` | `#B91C1C` | `#F87171` | Yanlış cevap, hata, silme |
+| `info` / `infoSoft` | `text-info` | `#0369A1` | `#38BDF8` | Bilgi notu |
 
 **Ders renkleri** (`bg-subject-matematik`, `subjectColors.matematik` …): matematik `#6366F1`, geometri `#8B5CF6`, fizik `#0EA5E9`, kimya `#10B981`, biyoloji `#84CC16`, türkçe `#F43F5E`, edebiyat `#EC4899`, tarih `#F59E0B`, coğrafya `#14B8A6`, felsefe `#A855F7`, din `#06B6D4`, ingilizce `#3B82F6`, fen `#22C55E`, inkılap `#EA580C`. Bu renkler kartın sol şeridinde, ikon arka planında (%12 opaklık) ve grafiklerde kullanılır; uzun metin rengi olarak kullanılmaz.
 
@@ -92,7 +94,8 @@ Her bileşenin web (`apps/web/components/ui`) ve mobil (`apps/mobile/components/
 | **Badge** | `tone`: `neutral` · `primary` · `success` · `warning` · `danger` · `info` | `rounded-full`, `text-xs`, `px-2.5 py-0.5`, soft zemin ve koyu metin. |
 | **ProgressBar** | `value` (0-100), `tone`, `size` | İz `surface-muted`, dolgu `primary` (veya ders rengi), `rounded-full`, yükseklik 8px. Yanında yüzde metni olur. |
 | **StatCard** | `label`, `value`, `hint`, `icon` | Büyük sayı `text-4xl font-bold tabular-nums`. Net ve puan gösterimi için kullanılır. |
-| **Input / Select** | `label`, `error`, `hint` | Yükseklik 44px, `rounded-md`, `bg-surface`, `border-border-strong`. Odakta `ring-2 ring-focus-ring`. Etiket her zaman üstte olur. |
+| **Input / Select** | `label?`, `error`, `hint` | Yükseklik 44px, `rounded-md`, `bg-surface`, `border-border-strong`. Odakta `ring-2 ring-focus-ring`. Giriş/kayıt formlarında **etiket yoktur**, alanın adı placeholder'dadır (ekran okuyucu için `aria-label` olarak da verilir). Uzun formlarda etiket üstte kullanılabilir. Hata mesajı alanın altında görünür. |
+| **PasswordChecklist** | `password` | Yalnızca şifre alanı odaktayken ve boş değilken alanın altında görünür. Kurallar `PASSWORD_RULES` (packages/shared): 6–16 karakter, 1 büyük harf, 1 rakam. Karşılanan kural `success` rengi ve ✓, karşılanmayan `textMuted` ve ✕. |
 | **OptionButton** (soru şıkkı) | `letter`, `state`: `idle` · `selected` · `correct` · `wrong` | Sol tarafta harf dairesi olur. `selected` → primarySoft, `correct` → successSoft ve ✓, `wrong` → dangerSoft ve ✕. |
 | **VideoCard** | `title`, `channel`, `duration`, `watched` | 16:9 küçük resim `rounded-md`. İzlenenlerde köşede ✓ rozeti bulunur. |
 | **EmptyState** | `icon`, `title`, `action` | Ortalanmış, ikon `text-text-subtle`, en fazla tek buton. |
@@ -108,10 +111,11 @@ Her bileşenin web (`apps/web/components/ui`) ve mobil (`apps/mobile/components/
 
 | | Web | Mobil |
 |---|---|---|
-| Gezinme | Üstte sabit header (64px): logo, ana menü, tema düğmesi, profil | Altta sekme çubuğu: **Ana Sayfa · Konular · Soru Bankası · Sınavlar · Tercih** |
+| Gezinme | Üstte sabit header (64px): **logo ikonu = menü düğmesi** (üzerine gelince ikon üç çizgiye döner, tıklayınca modüller açılır menüde listelenir), "UniCoach" yazısı (ana sayfa), **arama çubuğu** (şimdilik pasif), sağda tema düğmesi, profil ve çıkış | Altta sekme çubuğu: **Ana Sayfa · Konular · Soru Bankası · Sınavlar · Tercih** |
 | İçerik | Ortalanmış, en fazla 1200px. Izgara: 1 → 2 (md) → 3/4 (lg) sütun | Tek sütun, kenar boşluğu 16px |
 | Ana sayfa | Selamlama, ilerleme kartları ızgarası, "Soru Çöz" birincil butonu | Aynı içerik, dikey akış |
 | Sınav ekranı | Solda soru, sağda soru haritası ve süre | Soru tam ekran, alttan açılan soru haritası |
+| Giriş akışı | Ekranın sağına yapışık, tam yükseklikte panel (`max-w-md`, `bg-surface`, sol kenarda `border`); sol taraf boş zemin. Adımlar: e-posta → şifre **veya** kayıt (Ad, Soyad, Şifre) → şifre. Başlık: "UniCoach'a giriş yap" / "Hesabını oluştur". | Tam ekran, aynı adımlar |
 
 ## 8. Ses ve dil
 

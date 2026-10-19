@@ -1,25 +1,13 @@
 import Link from "next/link";
-import { ArrowRight, CircleCheck, CircleAlert, Flame, Target, TrendingUp } from "lucide-react";
-import { formatNet, type HealthResponse } from "@unicoach/shared";
-import { subjectColors } from "@unicoach/design";
+import { ArrowRight, BookOpenCheck, CircleCheck, CircleAlert, Flame, Target, TrendingUp } from "lucide-react";
+import type { HealthResponse } from "@unicoach/shared";
 import { Badge } from "@/components/ui/badge";
 import { buttonClasses } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ProgressBar } from "@/components/ui/progress-bar";
 import { StatCard } from "@/components/ui/stat-card";
 import { modules } from "@/components/modules";
 import { serverApi } from "@/lib/api";
-
-// API durumu her istekte okunur; derleme anında API'ye bağlanılmaz.
-export const dynamic = "force-dynamic";
-
-// Aşama 1'de gerçek kullanıcı verisiyle değiştirilecek örnek değerler.
-const demoProgress = [
-  { subject: "TYT Matematik", value: 72, color: subjectColors.matematik },
-  { subject: "TYT Türkçe", value: 58, color: subjectColors.turkce },
-  { subject: "AYT Fizik", value: 41, color: subjectColors.fizik },
-  { subject: "AYT Kimya", value: 55, color: subjectColors.kimya },
-];
+import { getSession } from "@/lib/session";
 
 async function getHealth(): Promise<HealthResponse | null> {
   try {
@@ -30,13 +18,15 @@ async function getHealth(): Promise<HealthResponse | null> {
 }
 
 export default async function HomePage() {
-  const health = await getHealth();
+  // Layout oturumu zaten doğruladı; getSession istek başına önbelleklenir.
+  const [user, health] = await Promise.all([getSession(), getHealth()]);
+  const firstName = user?.firstName ?? "";
 
   return (
     <div className="flex flex-col gap-8">
       <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Merhaba 👋</h1>
+          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Merhaba {firstName} 👋</h1>
           <p className="text-text-muted">Bugün hangi konuya çalışmak istersin? Küçük adımlar, büyük netler.</p>
         </div>
         <Link href="/soru-bankasi" className={buttonClasses({ size: "lg" })}>
@@ -45,28 +35,21 @@ export default async function HomePage() {
       </section>
 
       <section aria-label="Özet" className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="Son deneme" value={formatNet(84.5)} hint="TYT net · örnek veri" icon={<TrendingUp className="size-5" />} />
-        <StatCard label="Çalışma serisi" value="12 gün" hint="Harika gidiyorsun!" icon={<Flame className="size-5" />} />
-        <StatCard label="Bugünkü hedef" value="5/20" hint="çözülen soru" icon={<Target className="size-5" />} />
+        <StatCard label="Son deneme" value="—" hint="Henüz deneme çözmedin." icon={<TrendingUp className="size-5" />} />
+        <StatCard label="Çalışma serisi" value="—" hint="İlk çalışmanla seri başlar." icon={<Flame className="size-5" />} />
+        <StatCard label="Bugünkü hedef" value="—" hint="Henüz soru çözmedin." icon={<Target className="size-5" />} />
       </section>
 
       <section className="grid gap-4 lg:grid-cols-3">
         <Card className="flex flex-col gap-4 lg:col-span-2">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Konu ilerlemen</h2>
-            <Badge>Örnek veri</Badge>
+          <h2 className="text-lg font-semibold">Konu ilerlemen</h2>
+          <div className="flex flex-1 flex-col items-center justify-center gap-2 py-8 text-center">
+            <BookOpenCheck className="size-8 text-text-subtle" strokeWidth={1.75} aria-hidden />
+            <p className="font-medium">Henüz ilerleme yok</p>
+            <p className="max-w-sm text-sm text-text-muted">
+              Konu anlatımlarını izleyip soru çözdükçe ilerlemen burada görünecek.
+            </p>
           </div>
-          <ul className="flex flex-col gap-4">
-            {demoProgress.map((p) => (
-              <li key={p.subject} className="flex flex-col gap-1.5">
-                <span className="flex items-center gap-2 text-sm font-medium">
-                  <span className="size-2.5 rounded-full" style={{ backgroundColor: p.color }} aria-hidden />
-                  {p.subject}
-                </span>
-                <ProgressBar value={p.value} color={p.color} label={`${p.subject} ilerlemesi`} />
-              </li>
-            ))}
-          </ul>
         </Card>
 
         <Card className="flex flex-col gap-3">
