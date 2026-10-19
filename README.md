@@ -27,15 +27,19 @@ Oturum belirteçleri `JWT_SECRET` ile imzalanır. Compose'ta yerel kullanım iç
 
 ## Geliştirme
 
-Gereksinimler: Node.js 22+ ve Docker (yalnızca veritabanı için).
+Gereksinimler: Node.js 22+ ve PostgreSQL (doğrudan kurulu ya da Docker ile).
+
+**A) Doğrudan kurulu PostgreSQL (Docker gerekmez):** [PostgreSQL 18](https://www.postgresql.org/download/windows/) kurun. Türkçe Windows'ta kurulum sihirbazının **Locale** adımında **`C`** seçin; varsayılan Türkçe yerel ayar adı ("Türkiye") yüzünden veritabanı oluşturulamaz. Ardından:
 
 ```bash
 npm install
 cp .env.example apps/api/.env
-docker compose -f docker-compose.dev.yml up -d   # PostgreSQL → localhost:5432
-npm run db:migrate                                # tabloları oluşturur
-npm run dev                                       # API :4000, web :3000
+psql -U postgres -h localhost -f scripts/setup-local-db.sql   # unicoach kullanıcısı ve veritabanı
+npm run db:migrate                                             # tabloları oluşturur
+npm run dev                                                    # API :4000, web :3000
 ```
+
+**B) Docker ile yalnızca veritabanı:** `psql` adımı yerine `docker compose -f docker-compose.dev.yml up -d` çalıştırın, diğer adımlar aynıdır.
 
 ## Mimari
 

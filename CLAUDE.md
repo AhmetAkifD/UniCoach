@@ -34,9 +34,11 @@ Paketler `dist/` dizinine derlenir (CommonJS). Uygulamalardan önce `npm run bui
 
 ## Komutlar
 
+**Geliştirme makinesinde Docker kurulu değil** (2026-10-19, disk alanı yetersiz olduğu için kaldırıldı). Geliştirme doğrudan Windows'a kurulu PostgreSQL 18 ile yapılır (`localhost:5432`, kullanıcı/şifre/veritabanı `unicoach`, kurulum: `scripts/setup-local-db.sql`). Dockerfile ve compose dosyaları korunur ama burada çalıştırılamaz: bunlara dokunan değişiklikler proje tesliminden önce Docker yeniden kurularak `docker compose up --build` ile doğrulanmalıdır.
+
 ```bash
 npm install                                   # bağımlılıklar
-docker compose -f docker-compose.dev.yml up -d  # yalnızca Postgres (localhost:5432)
+psql -U postgres -h localhost -f scripts/setup-local-db.sql  # bir kez: unicoach kullanıcısı + veritabanı
 npm run dev                                   # paketleri derler, API :4000 + web :3000
 npm run build                                 # her şeyi derler
 npm run typecheck
