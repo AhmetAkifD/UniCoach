@@ -1,4 +1,4 @@
-import { useId, type InputHTMLAttributes } from "react";
+import { useId, type InputHTMLAttributes, type Ref } from "react";
 import { cn } from "@/lib/cn";
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -6,6 +6,8 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
   hint?: string;
+  /** React 19: ref normal bir prop olarak alınıp input'a iletilir. */
+  ref?: Ref<HTMLInputElement>;
 }
 
 export function Input({ label, error, hint, id, className, ...props }: InputProps) {

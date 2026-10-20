@@ -11,6 +11,15 @@ import type {
   LoginInput,
   RegisterInput,
 } from "./auth";
+import type {
+  CreateSourceInput,
+  ProgressInput,
+  SourceDetail,
+  SourceItem,
+  SourceSummary,
+  UpdateProfileInput,
+  UpdateSourceInput,
+} from "./library";
 
 export const USER_ROLES = ["STUDENT", "ADMIN"] as const;
 export type UserRole = (typeof USER_ROLES)[number];
@@ -62,10 +71,13 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       const message = typeof body?.message === "string" ? body.message : res.statusText;
       throw new ApiError(res.status, message, body?.errors);
     }
+    if (res.status === 204) return undefined as T;
     return (await res.json()) as T;
   }
 
-  const post = <T>(path: string, body: unknown) => request<T>(path, { method: "POST", body: JSON.stringify(body) });
+  const send = <T>(method: string, path: string, body?: unknown) =>
+    request<T>(path, { method, body: body === undefined ? undefined : JSON.stringify(body) });
+  const post = <T>(path: string, body: unknown) => send<T>("POST", path, body);
 
   return {
     request,
@@ -75,6 +87,21 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       register: (input: RegisterInput) => post<AuthResponse>("/auth/register", input),
       login: (input: LoginInput) => post<AuthResponse>("/auth/login", input),
       me: () => request<AuthUser>("/auth/me", { cache: "no-store" }),
+      updateProfile: (input: UpdateProfileInput) => send<AuthUser>("PATCH", "/auth/me", input),
+    },
+    sources: {
+      list: () => request<SourceSummary[]>("/sources", { cache: "no-store" }),
+      get: (id: string) => request<SourceDetail>(`/sources/${encodeURIComponent(id)}`, { cache: "no-store" }),
+      create: (input: CreateSourceInput) => post<SourceSummary>("/sources", input),
+      update: (id: string, input: UpdateSourceInput) =>
+        send<SourceSummary>("PATCH", `/sources/${encodeURIComponent(id)}`, input),
+      remove: (id: string) => send<void>("DELETE", `/sources/${encodeURIComponent(id)}`),
+      saveProgress: (id: string, itemId: string, input: ProgressInput) =>
+        send<SourceItem>(
+          "PUT",
+          `/sources/${encodeURIComponent(id)}/items/${encodeURIComponent(itemId)}/progress`,
+          input,
+        ),
     },
   };
 }

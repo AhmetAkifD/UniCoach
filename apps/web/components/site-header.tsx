@@ -45,7 +45,12 @@ export function SiteHeader({ user }: { user: AuthUser }) {
 
         <div className="ml-auto flex items-center gap-1">
           <ThemeToggle />
-          <div className="ml-1 flex items-center gap-2" title={`${fullName} · ${user.email}`}>
+          <Link
+            href="/profil"
+            aria-label="Profil"
+            className="ml-1 flex items-center gap-2 rounded-md p-0.5 pr-1.5 transition-colors duration-fast hover:bg-surface-muted"
+            title={`${fullName} · ${user.email}`}
+          >
             <span
               aria-hidden
               className="inline-flex size-9 items-center justify-center rounded-full bg-primary-soft text-sm font-semibold text-primary-soft-text"
@@ -54,7 +59,7 @@ export function SiteHeader({ user }: { user: AuthUser }) {
             </span>
             <span className="hidden max-w-40 truncate text-sm font-medium lg:inline">{fullName}</span>
             {user.role === "ADMIN" && <Badge tone="primary">{ROLE_LABELS.ADMIN}</Badge>}
-          </div>
+          </Link>
           <form action={logoutAction}>
             <button
               type="submit"

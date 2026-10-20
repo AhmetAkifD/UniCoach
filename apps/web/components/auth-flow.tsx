@@ -1,10 +1,13 @@
 "use client";
 
-import { useState, useTransition, type FormEvent } from "react";
+import { useEffect, useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { CircleAlert, CircleCheck, Pencil, RotateCw } from "lucide-react";
 import {
   ADMIN_SHORTCUT,
+  EXAM_TRACK_LABELS,
+  EXAM_TRACKS,
+  type ExamTrack,
   checkEmailSchema,
   fieldErrors,
   loginSchema,
@@ -13,6 +16,7 @@ import {
 } from "@unicoach/shared";
 import { checkEmailAction, loginAction, registerAction, type ActionResult } from "@/app/(auth)/actions";
 import { PasswordChecklist } from "@/components/password-checklist";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -36,6 +40,10 @@ export function AuthFlow({ apiReachable = true }: { apiReachable?: boolean }) {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string>();
   const [pending, startTransition] = useTransition();
+  // JavaScript yüklenmeden gönderilirse tarayıcı formu GET ile yollar ve e-posta URL'ye düşer.
+  // Gönder butonu hazır olana kadar pasif kalır; pasif varsayılan buton Enter ile gönderimi de engeller.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
 
   function go(next: Step) {
     setErrors({});
@@ -99,7 +107,13 @@ export function AuthFlow({ apiReachable = true }: { apiReachable?: boolean }) {
               error={errors.email}
               autoFocus
             />
-            <Button type="submit" size="lg" loading={pending && apiReachable} className="w-full">
+            <Button
+              type="submit"
+              size="lg"
+              loading={pending && apiReachable}
+              disabled={!hydrated}
+              className="w-full"
+            >
               Devam et
             </Button>
           </fieldset>
@@ -196,11 +210,12 @@ function RegisterStep({
   pending: boolean;
   errors: FieldErrors;
   onChangeEmail: () => void;
-  onSubmit: (values: { firstName: string; lastName: string; password: string }) => void;
+  onSubmit: (values: { firstName: string; lastName: string; password: string; examTrack: ExamTrack | null }) => void;
 }) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [password, setPassword] = useState("");
+  const [examTrack, setExamTrack] = useState<ExamTrack | null>(null);
   const [passwordFocused, setPasswordFocused] = useState(false);
   // Kural listesi yalnızca şifre yazılırken görünür; admin kısayolunda kurallar geçerli değildir.
   const showChecklist = passwordFocused && password.length > 0 && email !== ADMIN_SHORTCUT;
@@ -209,7 +224,7 @@ function RegisterStep({
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        onSubmit({ firstName, lastName, password });
+        onSubmit({ firstName, lastName, password, examTrack });
       }}
       noValidate
       className="flex flex-col gap-4"
@@ -250,6 +265,13 @@ function RegisterStep({
         />
         {showChecklist && <PasswordChecklist id="password-rules" password={password} />}
       </div>
+      <SegmentedControl
+        label="Hangi sınava hazırlanıyorsun?"
+        options={EXAM_TRACKS.map((t) => ({ value: t, label: EXAM_TRACK_LABELS[t] }))}
+        value={examTrack}
+        onChange={setExamTrack}
+        error={errors.examTrack}
+      />
       <Button type="submit" size="lg" loading={pending} className="w-full">
         Hesap oluştur
       </Button>

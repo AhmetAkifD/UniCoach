@@ -41,6 +41,30 @@ npm run dev                                                    # API :4000, web 
 
 **B) Docker ile yalnızca veritabanı:** `psql` adımı yerine `docker compose -f docker-compose.dev.yml up -d` çalıştırın, diğer adımlar aynıdır.
 
+### Yerel sunucuyu başlatma ve durdurma
+
+Proje klasöründe (kurulumdan sonra her seferinde yalnızca bu yeterlidir):
+
+```bash
+npm run dev          # API → http://localhost:4000, web → http://localhost:3000
+```
+
+- **Durdurmak:** `npm run dev` çalışan terminalde `Ctrl+C`.
+- **Port meşgul hatası alırsanız** (`EADDRINUSE: :::3000` / `:::4000`), arkada kalan süreçleri kapatın (PowerShell):
+
+  ```powershell
+  Get-NetTCPConnection -LocalPort 3000,4000 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }
+  ```
+
+- **PostgreSQL** Windows servisi olarak bilgisayar açılınca kendiliğinden başlar. Elle durdurup başlatmak için (yönetici PowerShell):
+
+  ```powershell
+  Stop-Service postgresql-x64-18
+  Start-Service postgresql-x64-18
+  ```
+
+- `npm run build` ya da `prisma generate` çalıştırmadan önce `npm run dev`'i durdurun: Windows'ta çalışan API, Prisma'nın motor dosyasını kilitler (`EPERM` hatası).
+
 ## Mimari
 
 ```

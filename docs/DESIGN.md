@@ -97,7 +97,11 @@ Her bileşenin web (`apps/web/components/ui`) ve mobil (`apps/mobile/components/
 | **Input / Select** | `label?`, `error`, `hint` | Yükseklik 44px, `rounded-md`, `bg-surface`, `border-border-strong`. Odakta `ring-2 ring-focus-ring`. Giriş/kayıt formlarında **etiket yoktur**, alanın adı placeholder'dadır (ekran okuyucu için `aria-label` olarak da verilir). Uzun formlarda etiket üstte kullanılabilir. Hata mesajı alanın altında görünür. |
 | **PasswordChecklist** | `password` | Yalnızca şifre alanı odaktayken ve boş değilken alanın altında görünür. Kurallar `PASSWORD_RULES` (packages/shared): 6–16 karakter, 1 büyük harf, 1 rakam. Karşılanan kural `success` rengi ve ✓, karşılanmayan `textMuted` ve ✕. |
 | **OptionButton** (soru şıkkı) | `letter`, `state`: `idle` · `selected` · `correct` · `wrong` | Sol tarafta harf dairesi olur. `selected` → primarySoft, `correct` → successSoft ve ✓, `wrong` → dangerSoft ve ✕. |
-| **VideoCard** | `title`, `channel`, `duration`, `watched` | 16:9 küçük resim `rounded-md`. İzlenenlerde köşede ✓ rozeti bulunur. |
+| **SourceCard** (Konu Anlatımı kaynak grubu) | `source`, `color` | 16:9 küçük resim kartın üstünde, sağ altta "N video" etiketi; altında ad (en fazla 2 satır), kanal, ders rengiyle ilerleme çubuğu ve "x/y izlendi". Hepsi izlendiyse sol üstte "Bitti" rozeti. |
+| **Video satırı** (oynatıcı yanındaki liste) | `item`, `active` | Sıra no · başlık (2 satır) · süre ya da "kalınan / süre"; sağda yuvarlak ✓ düğmesi (izlendi: `success` dolgu). Çalan satır `primarySoft` zemin ve ▶ ikonu. |
+| **FilterChip** (filtre satırı) | `label`, `count`, `active` | `h-8`, `rounded-full`, kenarlıklı; seçili çip `border-primary` + `primarySoft` zemin. Etiketten sonra küçük sayı (`text-xs`, `textSubtle`). Satırın solunda 48px genişlikte satır adı ("Sınav", "Ders"); çipler alt satıra kendi sütunlarında sarılır. Her satırın ilk çipi "Tümü". Seçim URL'de tutulur. |
+| **SegmentedControl** | `label`, `options`, `value`, `error` | `surface-muted` zeminli tek satır düğme grubu; seçili seçenek `bg-surface` + `shadow-card`. Ekran okuyucuda radyo grubu. YKS/LGS seçimi gibi 2–4 seçenek için. |
+| **Dialog** | — | Yerel `<dialog>` + `showModal()`; `rounded-xl`, `shadow-raised`, arka plan `black/50`. Açılınca odak ilk giriş alanına verilir. İşlem sürerken kapatılamaz. |
 | **EmptyState** | `icon`, `title`, `action` | Ortalanmış, ikon `text-text-subtle`, en fazla tek buton. |
 
 **İkonlar:** [Lucide](https://lucide.dev) kullanılır (web: `lucide-react`, mobil: `lucide-react-native`). Çizgi kalınlığı 1.75, boyut 20px (metin içinde 16px).
@@ -115,7 +119,8 @@ Her bileşenin web (`apps/web/components/ui`) ve mobil (`apps/mobile/components/
 | İçerik | Ortalanmış, en fazla 1200px. Izgara: 1 → 2 (md) → 3/4 (lg) sütun | Tek sütun, kenar boşluğu 16px |
 | Ana sayfa | Selamlama, ilerleme kartları ızgarası, "Soru Çöz" birincil butonu | Aynı içerik, dikey akış |
 | Sınav ekranı | Solda soru, sağda soru haritası ve süre | Soru tam ekran, alttan açılan soru haritası |
-| Giriş akışı | Ekranın sağına yapışık, tam yükseklikte panel (`max-w-md`, `bg-surface`, sol kenarda `border`); sol taraf boş zemin. Adımlar: e-posta → şifre **veya** kayıt (Ad, Soyad, Şifre) → şifre. Başlık: "UniCoach'a giriş yap" / "Hesabını oluştur". | Tam ekran, aynı adımlar |
+| Giriş akışı | Ekranın sağına yapışık, tam yükseklikte panel (`max-w-md`, `bg-surface`, sol kenarda `border`); logo ekranın sol üstünde. Adımlar: e-posta → şifre **veya** kayıt (Ad, Soyad, Şifre, YKS/LGS) → şifre. Başlık: "UniCoach'a giriş yap" / "Hesabını oluştur". | Tam ekran, aynı adımlar |
+| Konu Anlatımı | Başlığın altında iki filtre satırı: Sınav (Tümü · TYT · AYT · LGS, YDT yalnızca kaynağı varsa) ve Ders (Tümü + seçili sınavda kaynağı olan dersler; TYT/AYT aynı ders tek çipte). Altında ders başlıkları (ders rengi nokta + ad + sayı) ve kart ızgarası 1 → 2 → 3 → 4 sütun; sağ üstte "Kaynak ekle". Detayda solda 16:9 oynatıcı, sağda 360px video listesi (kendi içinde kayar). | Oynatıcı üstte, liste altta |
 
 ## 8. Ses ve dil
 

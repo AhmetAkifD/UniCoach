@@ -22,6 +22,7 @@ import { AuthService } from "./auth.service";
   ],
   controllers: [AuthController],
   providers: [AuthService, AuthGuard],
-  exports: [AuthService, AuthGuard],
+  // JwtModule de dışa aktarılır: AuthGuard başka modüllerde (ör. SourcesModule) kullanılınca JwtService gerekir.
+  exports: [AuthService, AuthGuard, JwtModule],
 })
 export class AuthModule {}

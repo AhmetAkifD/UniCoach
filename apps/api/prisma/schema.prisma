@@ -1,5 +1,4 @@
-// UniCoach veri modeli. Aşama 1'de içerik modelleri (sınav, ders, konu, video,
-// soru, deneme, üniversite programı) eklenecek.
+// UniCoach veri modeli.
 
 generator client {
   provider = "prisma-client-js"
@@ -15,13 +14,71 @@ enum UserRole {
   ADMIN
 }
 
+/// Öğrencinin hazırlandığı sınav. YKS = TYT + AYT (+ YDT).
+enum ExamTrack {
+  YKS
+  LGS
+}
+
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
+  id           String     @id @default(cuid())
+  email        String     @unique
   firstName    String
   lastName     String
   passwordHash String
-  role         UserRole @default(STUDENT)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  role         UserRole   @default(STUDENT)
+  /// Kayıtta seçilir; eski hesaplarda boş olabilir.
+  examTrack    ExamTrack?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  sources      Source[]
+}
+
+enum SourceKind {
+  VIDEO
+  PLAYLIST
+}
+
+/// Konu Anlatımı: öğrencinin eklediği bir YouTube videosu veya oynatma listesi ("kaynak grubu").
+/// Yalnızca ekleyen öğrenciye görünür.
+model Source {
+  id           String       @id @default(cuid())
+  userId       String
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// packages/shared → SUBJECTS kimliği (ör. "ayt-fizik")
+  subject      String
+  kind         SourceKind
+  /// Video ID'si ya da oynatma listesi ID'si
+  youtubeId    String
+  /// Öğrencinin değiştirebildiği grup adı; başta YouTube başlığıdır.
+  title        String
+  author       String?
+  thumbnailUrl String?
+  /// Liste YouTube oynatıcısının 200 video sınırına takılmış olabilir.
+  truncated    Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  items        SourceItem[]
+
+  @@unique([userId, kind, youtubeId])
+  @@index([userId, subject])
+}
+
+/// Kaynaktaki tek video. Aynı video bir listede birden çok kez geçebilir; bu yüzden sıra numarasıyla ayrılır.
+/// Kaynak kişiye özel olduğundan izleme ilerlemesi de burada tutulur.
+model SourceItem {
+  id          String    @id @default(cuid())
+  sourceId    String
+  source      Source    @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  /// YouTube'daki sıra (0'dan başlar)
+  position    Int
+  videoId     String
+  title       String
+  durationSec Int?
+  /// Kalınan yer (saniye)
+  positionSec Int       @default(0)
+  watchedAt   DateTime?
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([sourceId, position])
 }
