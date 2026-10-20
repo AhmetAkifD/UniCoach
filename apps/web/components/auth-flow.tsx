@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition, type FormEvent } from "react";
-import { CircleAlert, CircleCheck, Pencil } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { CircleAlert, CircleCheck, Pencil, RotateCw } from "lucide-react";
 import {
   ADMIN_SHORTCUT,
   checkEmailSchema,
@@ -27,7 +28,9 @@ type Step =
   | { name: "password"; email: string; notice?: string }
   | { name: "register"; email: string };
 
-export function AuthFlow() {
+/** `apiReachable`: sayfa açılırken (sunucuda) API'ye ulaşılabildi mi? Ulaşılamadıysa uyarı hemen gösterilir. */
+export function AuthFlow({ apiReachable = true }: { apiReachable?: boolean }) {
+  const router = useRouter();
   const [step, setStep] = useState<Step>({ name: "email" });
   const [email, setEmail] = useState("");
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -65,24 +68,41 @@ export function AuthFlow() {
       {step.name === "password" && step.notice && (
         <Notice tone="success">{step.notice}</Notice>
       )}
-      {formError && <Notice tone="danger">{formError}</Notice>}
+      {!apiReachable && (
+        <Notice tone="danger">
+          <span className="flex flex-1 flex-wrap items-center justify-between gap-2">
+            Sunucuya ulaşılamadı. Biraz sonra tekrar dene.
+            <button
+              type="button"
+              onClick={() => startTransition(() => router.refresh())}
+              className="inline-flex items-center gap-1 font-medium underline-offset-2 hover:underline"
+            >
+              <RotateCw className={pending ? "size-3.5 animate-spin" : "size-3.5"} aria-hidden /> Tekrar dene
+            </button>
+          </span>
+        </Notice>
+      )}
+      {formError && apiReachable && <Notice tone="danger">{formError}</Notice>}
 
       {step.name === "email" && (
         <form onSubmit={submitEmail} noValidate className="flex flex-col gap-4">
-          <Input
-            name="email"
-            type="email"
-            autoComplete="email"
-            inputMode="email"
-            placeholder="E-posta adresi"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            error={errors.email}
-            autoFocus
-          />
-          <Button type="submit" size="lg" loading={pending} className="w-full">
-            Devam et
-          </Button>
+          {/* API'ye ulaşılamıyorsa form kilitlenir; "Tekrar dene" sayfayı yeniden kontrol eder. */}
+          <fieldset disabled={!apiReachable} className="contents">
+            <Input
+              name="email"
+              type="email"
+              autoComplete="email"
+              inputMode="email"
+              placeholder="E-posta adresi"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              error={errors.email}
+              autoFocus
+            />
+            <Button type="submit" size="lg" loading={pending && apiReachable} className="w-full">
+              Devam et
+            </Button>
+          </fieldset>
         </form>
       )}
 
