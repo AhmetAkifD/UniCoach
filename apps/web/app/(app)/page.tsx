@@ -75,9 +75,11 @@ export default async function HomePage() {
                   </span>
                   <h3 className="text-lg font-semibold">{m.title}</h3>
                   <p className="text-sm text-text-muted">{m.description}</p>
-                  <Badge tone="primary" className="mt-auto self-start">
-                    Yakında · Aşama {m.phase}
-                  </Badge>
+                  {!m.ready && (
+                    <Badge tone="primary" className="mt-auto self-start">
+                      Yakında · Aşama {m.phase}
+                    </Badge>
+                  )}
                 </Card>
               </Link>
             );

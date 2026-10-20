@@ -6,6 +6,8 @@ export interface ModuleInfo {
   description: string;
   icon: LucideIcon;
   phase: number;
+  /** Kullanıma açık mı? Değilse kartta "Yakında" rozeti görünür. */
+  ready?: boolean;
 }
 
 /** Dört ana modül — ana sayfa kartları ve "yakında" sayfaları bu listeyi kullanır. */
@@ -13,9 +15,10 @@ export const modules: ModuleInfo[] = [
   {
     href: "/konular",
     title: "Konu Anlatımı",
-    description: "Her konu için seçilmiş YouTube anlatımları. İzlediklerini işaretle, ilerlemeni gör.",
+    description: "Takip ettiğin YouTube videoları ve oynatma listeleri. Nerede kaldığını unutma.",
     icon: PlaySquare,
     phase: 2,
+    ready: true,
   },
   {
     href: "/soru-bankasi",

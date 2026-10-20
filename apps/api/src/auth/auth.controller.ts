@@ -1,14 +1,16 @@
-import { Body, Controller, Get, HttpCode, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, Patch, Post, UseGuards } from "@nestjs/common";
 import {
   checkEmailSchema,
   loginSchema,
   registerSchema,
+  updateProfileSchema,
   type AuthResponse,
   type AuthUser,
   type CheckEmailInput,
   type CheckEmailResponse,
   type LoginInput,
   type RegisterInput,
+  type UpdateProfileInput,
 } from "@unicoach/shared";
 import { ZodValidationPipe } from "../common/zod-validation.pipe";
 import { AuthGuard, CurrentUser } from "./auth.guard";
@@ -39,5 +41,14 @@ export class AuthController {
   @UseGuards(AuthGuard)
   me(@CurrentUser() user: AuthUser): AuthUser {
     return user;
+  }
+
+  @Patch("me")
+  @UseGuards(AuthGuard)
+  updateProfile(
+    @CurrentUser() user: AuthUser,
+    @Body(new ZodValidationPipe(updateProfileSchema)) body: UpdateProfileInput,
+  ): Promise<AuthUser> {
+    return this.auth.updateProfile(user.id, body);
   }
 }

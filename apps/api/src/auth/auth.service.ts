@@ -8,6 +8,7 @@ import {
   type CheckEmailResponse,
   type LoginInput,
   type RegisterInput,
+  type UpdateProfileInput,
 } from "@unicoach/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import { hashPassword, verifyPassword } from "./password";
@@ -36,6 +37,7 @@ export class AuthService {
           firstName: input.firstName,
           lastName: input.lastName,
           email: input.email,
+          examTrack: input.examTrack,
           passwordHash: await hashPassword(input.password),
           // Rol yalnızca burada belirlenir; istemciden gelen bir rol alanı kabul edilmez.
           role: isAdminShortcut(input.email, input.password) ? "ADMIN" : "STUDENT",
@@ -58,6 +60,12 @@ export class AuthService {
     return this.issue(user);
   }
 
+  /** Profil: şimdilik yalnızca hazırlanılan sınav değiştirilebilir. */
+  async updateProfile(userId: string, input: UpdateProfileInput): Promise<AuthUser> {
+    const user = await this.prisma.user.update({ where: { id: userId }, data: { examTrack: input.examTrack } });
+    return toAuthUser(user);
+  }
+
   /** Belirteçteki kullanıcıyı getirir; kullanıcı silinmişse null. */
   async findUser(id: string): Promise<AuthUser | null> {
     const user = await this.prisma.user.findUnique({ where: { id } });
@@ -77,6 +85,7 @@ function toAuthUser(user: User): AuthUser {
     lastName: user.lastName,
     email: user.email,
     role: user.role,
+    examTrack: user.examTrack,
     createdAt: user.createdAt.toISOString(),
   };
 }

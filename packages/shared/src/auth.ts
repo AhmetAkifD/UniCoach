@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { UserRole } from "./api";
+import { EXAM_TRACKS, type ExamTrack } from "./library";
 
 /** Web oturum çerezinin adı. Mobil uygulama çerez yerine `Authorization: Bearer` kullanır. */
 export const SESSION_COOKIE = "uc_session";
@@ -67,6 +68,7 @@ export const registerSchema = z
     lastName: nameField("Soyad"),
     email: emailSchema,
     password: z.string({ error: "Bir şifre belirle." }).min(1, { error: "Bir şifre belirle." }),
+    examTrack: z.enum(EXAM_TRACKS, { error: "Hangi sınava hazırlandığını seç." }),
   })
   .superRefine(({ email, password }, ctx) => {
     if (email === ADMIN_SHORTCUT) {
@@ -100,6 +102,8 @@ export interface AuthUser {
   lastName: string;
   email: string;
   role: UserRole;
+  /** Eski hesaplarda boş olabilir; profilden seçilir. */
+  examTrack: ExamTrack | null;
   createdAt: string;
 }
 
