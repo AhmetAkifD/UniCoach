@@ -20,3 +20,6 @@ Thumbs.db
 
 # Yüklenen PDF dosyaları (apps/api/storage)
 storage/
+
+# Deneme amaçlı örnek PDF'ler (telif hakkı sahiplerine ait)
+PDFs/

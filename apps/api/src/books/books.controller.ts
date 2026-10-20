@@ -2,11 +2,14 @@ import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, Req, 
 import {
   bookProgressSchema,
   createBookSchema,
+  saveBookQuestionsSchema,
   updateBookSchema,
   type AuthUser,
   type BookProgressInput,
+  type BookQuestion,
   type BookSummary,
   type CreateBookInput,
+  type SaveBookQuestionsInput,
   type UpdateBookInput,
 } from "@unicoach/shared";
 import type { Request, Response } from "express";
@@ -60,6 +63,20 @@ export class BooksController {
     @Body(new ZodValidationPipe(bookProgressSchema)) body: BookProgressInput,
   ): Promise<BookSummary> {
     return this.books.saveProgress(user.id, id, body);
+  }
+
+  @Get(":id/questions")
+  questions(@CurrentUser() user: AuthUser, @Param("id") id: string): Promise<BookQuestion[]> {
+    return this.books.questions(user.id, id);
+  }
+
+  @Put(":id/questions")
+  saveQuestions(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(saveBookQuestionsSchema)) body: SaveBookQuestionsInput,
+  ): Promise<BookQuestion[]> {
+    return this.books.saveQuestions(user.id, id, body);
   }
 
   /** Gövde ham PDF'tir (Content-Type: application/pdf); JSON gövde ayrıştırıcısına girmeden diske akıtılır. */

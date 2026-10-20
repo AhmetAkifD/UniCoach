@@ -32,7 +32,10 @@ export function BookCard({ book, color, showTopic = true }: { book: BookSummary;
           <ProgressBar value={percent} color={color} label={`${book.title} ilerlemesi`} showValue={false} />
           <span className="flex items-center justify-between text-xs text-text-muted tabular-nums">
             <span>{book.pageCount ? `Sayfa ${book.lastPage}/${book.pageCount}` : "Henüz açılmadı"}</span>
-            <span>{formatBytes(book.sizeBytes)}</span>
+            <span>
+              {book.questionCount > 0 && `${book.questionCount} soru · `}
+              {formatBytes(book.sizeBytes)}
+            </span>
           </span>
         </div>
       </Card>

@@ -1,10 +1,13 @@
 import "reflect-metadata";
 import { Logger } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
+import type { NestExpressApplication } from "@nestjs/platform-express";
 import { AppModule } from "./app.module";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // Soru Bankası'nda bir PDF'in tüm soruları (şık metinleriyle) tek istekte kaydedilir; varsayılan 100 KB yetmez.
+  app.useBodyParser("json", { limit: "5mb" });
 
   // Tüm uç noktalar /api altında: web (Next.js rewrite) ve mobil aynı yolu kullanır.
   app.setGlobalPrefix("api");

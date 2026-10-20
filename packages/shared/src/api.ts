@@ -20,7 +20,14 @@ import type {
   UpdateProfileInput,
   UpdateSourceInput,
 } from "./library";
-import type { BookProgressInput, BookSummary, CreateBookInput, UpdateBookInput } from "./question-bank";
+import type {
+  BookProgressInput,
+  BookQuestion,
+  BookSummary,
+  CreateBookInput,
+  SaveBookQuestionsInput,
+  UpdateBookInput,
+} from "./question-bank";
 
 export const USER_ROLES = ["STUDENT", "ADMIN"] as const;
 export type UserRole = (typeof USER_ROLES)[number];
@@ -116,6 +123,10 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       remove: (id: string) => send<void>("DELETE", `/books/${encodeURIComponent(id)}`),
       saveProgress: (id: string, input: BookProgressInput) =>
         send<BookSummary>("PUT", `/books/${encodeURIComponent(id)}/progress`, input),
+      questions: (id: string) =>
+        request<BookQuestion[]>(`/books/${encodeURIComponent(id)}/questions`, { cache: "no-store" }),
+      saveQuestions: (id: string, input: SaveBookQuestionsInput) =>
+        send<BookQuestion[]>("PUT", `/books/${encodeURIComponent(id)}/questions`, input),
       /** PDF dosyasının adresi (GET: indirme/Range ile okuma, PUT: yükleme). */
       filePath: (id: string) => `${baseUrl}/api/books/${encodeURIComponent(id)}/file`,
     },

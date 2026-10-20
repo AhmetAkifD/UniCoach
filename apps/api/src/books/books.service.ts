@@ -11,10 +11,15 @@ import {
   NotFoundException,
   PayloadTooLargeException,
 } from "@nestjs/common";
-import type { QuestionBook } from "@prisma/client";
+import type { BookQuestion as BookQuestionRow, QuestionBook } from "@prisma/client";
 import {
   BOOK_MAX_BYTES,
+  type AnswerKeyMethod,
   type BookProgressInput,
+  type DetectMethod,
+  type BookQuestion,
+  type ChoiceLetter,
+  type SaveBookQuestionsInput,
   type BookSummary,
   type CreateBookInput,
   type UpdateBookInput,
@@ -27,6 +32,9 @@ const BOOKS_DIR = path.join(path.resolve(process.env.UPLOAD_DIR ?? "storage"), "
 /** Kaydı açılıp dosyası hiç gelmeyen (yarıda kalmış) yüklemeler bu süreden sonra silinir. */
 const STALE_UPLOAD_MS = 60 * 60 * 1000;
 const PDF_MAGIC = "%PDF-";
+/** Özetlerde soru sayısı da döner. */
+const withCount = { _count: { select: { questions: true } } } as const;
+type BookRow = QuestionBook & { _count?: { questions: number } };
 
 @Injectable()
 export class BooksService {
@@ -37,6 +45,7 @@ export class BooksService {
     const books = await this.prisma.questionBook.findMany({
       where: { userId, uploadedAt: { not: null } },
       orderBy: { createdAt: "desc" },
+      include: withCount,
     });
     return books.map(toSummary);
   }
@@ -112,7 +121,7 @@ export class BooksService {
   async update(userId: string, id: string, input: UpdateBookInput): Promise<BookSummary> {
     await this.findUploaded(userId, id);
     const data = updateBookData(input);
-    return toSummary(await this.prisma.questionBook.update({ where: { id }, data }));
+    return toSummary(await this.prisma.questionBook.update({ where: { id }, data, include: withCount }));
   }
 
   async remove(userId: string, id: string): Promise<void> {
@@ -126,11 +135,32 @@ export class BooksService {
     const book = await this.findUploaded(userId, id);
     const pageCount = input.pageCount ?? book.pageCount;
     const lastPage = pageCount ? Math.min(input.page, pageCount) : input.page;
-    return toSummary(await this.prisma.questionBook.update({ where: { id }, data: { lastPage, pageCount } }));
+    return toSummary(await this.prisma.questionBook.update({ where: { id }, data: { lastPage, pageCount }, include: withCount }));
   }
 
-  private async findUploaded(userId: string, id: string): Promise<QuestionBook> {
-    const book = await this.prisma.questionBook.findFirst({ where: { id, userId, uploadedAt: { not: null } } });
+  async questions(userId: string, id: string): Promise<BookQuestion[]> {
+    await this.findUploaded(userId, id);
+    const rows = await this.prisma.bookQuestion.findMany({ where: { bookId: id }, orderBy: { position: "asc" } });
+    return rows.map(toQuestion);
+  }
+
+  /** Düzenleyici PDF'in tüm sorularını gönderir; eski liste tek işlemde yenisiyle değiştirilir. */
+  async saveQuestions(userId: string, id: string, input: SaveBookQuestionsInput): Promise<BookQuestion[]> {
+    await this.findUploaded(userId, id);
+    await this.prisma.$transaction([
+      this.prisma.bookQuestion.deleteMany({ where: { bookId: id } }),
+      this.prisma.bookQuestion.createMany({
+        data: input.questions.map((q, position) => ({ ...q, choices: q.choices.slice(0, q.choiceCount), bookId: id, position })),
+      }),
+    ]);
+    return this.questions(userId, id);
+  }
+
+  private async findUploaded(userId: string, id: string): Promise<BookRow> {
+    const book = await this.prisma.questionBook.findFirst({
+      where: { id, userId, uploadedAt: { not: null } },
+      include: withCount,
+    });
     if (!book) throw new NotFoundException("PDF bulunamadı.");
     return book;
   }
@@ -164,10 +194,12 @@ function updateBookData(input: UpdateBookInput) {
     ...(input.title !== undefined && { title: input.title }),
     ...(input.subject !== undefined && { subject: input.subject }),
     ...(input.topic !== undefined && { topic: input.topic }),
+    ...(input.detectMethod !== undefined && { detectMethod: input.detectMethod }),
+    ...(input.keyMethod !== undefined && { keyMethod: input.keyMethod }),
   };
 }
 
-function toSummary(book: QuestionBook): BookSummary {
+function toSummary(book: BookRow): BookSummary {
   return {
     id: book.id,
     subject: book.subject,
@@ -176,7 +208,26 @@ function toSummary(book: QuestionBook): BookSummary {
     sizeBytes: book.sizeBytes,
     pageCount: book.pageCount,
     lastPage: book.lastPage,
+    questionCount: book._count?.questions ?? 0,
+    detectMethod: book.detectMethod as DetectMethod,
+    keyMethod: book.keyMethod as AnswerKeyMethod,
     createdAt: book.createdAt.toISOString(),
     updatedAt: book.updatedAt.toISOString(),
+  };
+}
+
+function toQuestion(q: BookQuestionRow): BookQuestion {
+  return {
+    id: q.id,
+    section: q.section,
+    number: q.number,
+    page: q.page,
+    x: q.x,
+    y: q.y,
+    w: q.w,
+    h: q.h,
+    choiceCount: q.choiceCount,
+    answer: (q.answer as ChoiceLetter | null) ?? null,
+    choices: q.choices,
   };
 }

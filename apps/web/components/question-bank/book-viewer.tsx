@@ -13,6 +13,7 @@ import {
   Download,
   File,
   GalleryVertical,
+  ListChecks,
   Loader2,
   Minus,
   MoveHorizontal,
@@ -708,6 +709,13 @@ function BookHeader({
         {book.topic && <span>{book.topic}</span>}
         {pageCount > 0 && <span className="tabular-nums">{pageCount} sayfa</span>}
         <span className="tabular-nums">{formatBytes(book.sizeBytes)}</span>
+        <Link
+          href={`/soru-bankasi/${book.id}/sorular`}
+          className="inline-flex items-center gap-1.5 font-medium text-primary hover:underline"
+        >
+          <ListChecks className="size-4" aria-hidden />
+          {book.questionCount ? `${book.questionCount} soru çıkarıldı` : "Soruları çıkar"}
+        </Link>
       </div>
 
       <details className="group text-sm">
