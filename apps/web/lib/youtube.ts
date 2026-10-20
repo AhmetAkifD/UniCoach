@@ -15,8 +15,22 @@ export interface YTPlayer {
   getDuration(): number;
   getPlayerState(): number;
   getPlaylist(): string[] | null;
+  seekTo(seconds: number, allowSeekAhead: boolean): void;
+  getVolume(): number;
+  setVolume(volume: number): void;
+  mute(): void;
+  unMute(): void;
+  isMuted(): boolean;
+  getPlaybackRate(): number;
+  setPlaybackRate(rate: number): void;
+  /** 0–1 arası tamponlanmış oran */
+  getVideoLoadedFraction(): number;
+  getIframe(): HTMLIFrameElement;
   destroy(): void;
 }
+
+/** YouTube'un gömülü oynatıcısının izin verdiği hızlardan 0.5×–2× aralığı (2× üstü desteklenmiyor). */
+export const PLAYBACK_RATES = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2] as const;
 
 interface YTPlayerOptions {
   width?: number | string;

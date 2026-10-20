@@ -19,11 +19,15 @@ import { Input } from "@/components/ui/input";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { browserApi } from "@/lib/api";
 import { cn } from "@/lib/cn";
+import { loadPlayerPrefs } from "@/lib/player-prefs";
 import { PlayerState, createPlayer, formatDuration, loadYouTubeApi, type YTPlayer } from "@/lib/youtube";
 import { SubjectSelect } from "./subject-select";
+import { VideoControls } from "./video-controls";
 
 /** Oynarken ilerleme bu aralıkla kaydedilir. */
 const SAVE_INTERVAL_MS = 10_000;
+/** Tam ekranda fare hareketsiz kalınca kontrol paneli bu sürede gizlenir. */
+const CONTROLS_HIDE_MS = 2_500;
 
 /** Kaldığı yerden başlatma: izlenmiş videolar baştan, yarım kalanlar kaldığı saniyeden. */
 function startSeconds(item: SourceItem): number {
@@ -50,7 +54,12 @@ export function SourcePlayer({
   const [items, setItems] = useState(source.items);
   const [current, setCurrent] = useState(() => firstUnwatched(source.items));
   const [error, setError] = useState<string>();
+  const [ready, setReady] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
 
+  /** Tam ekrana alınan kap: video + kontrol şeridi birlikte büyür. */
+  const frameRef = useRef<HTMLDivElement>(null);
   const mountRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YTPlayer | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -123,10 +132,22 @@ export function SourcePlayer({
       width: "100%",
       height: "100%",
       videoId: first.videoId,
-      playerVars: { start: startSeconds(first), playsinline: 1 },
+      // YouTube kontrolleri kapalı; kontroller videonun altındaki kendi şeridimizde (VideoControls).
+      playerVars: {
+        start: startSeconds(first),
+        playsinline: 1,
+        controls: 0,
+        disablekb: 1,
+        fs: 0,
+        iv_load_policy: 3,
+      },
       events: {
-        onStateChange: ({ data }) => {
+        onStateChange: ({ target, data }) => {
+          setPlaying(data === PlayerState.PLAYING || data === PlayerState.BUFFERING);
           if (data === PlayerState.PLAYING) {
+            // YouTube yeni videoda hızı sıfırlayabilir; kayıtlı tercihi koru.
+            const { rate } = loadPlayerPrefs();
+            if (Math.abs(target.getPlaybackRate() - rate) > 0.01) target.setPlaybackRate(rate);
             stopTimer();
             timerRef.current = setInterval(() => saveCurrent(), SAVE_INTERVAL_MS);
           } else if (data === PlayerState.PAUSED) {
@@ -145,8 +166,13 @@ export function SourcePlayer({
       })
       .then((player) => {
         if (!player) return;
-        if (cancelled) player.destroy();
-        else playerRef.current = player;
+        if (cancelled) return player.destroy();
+        playerRef.current = player;
+        const prefs = loadPlayerPrefs();
+        player.setVolume(prefs.volume);
+        if (prefs.muted) player.mute();
+        player.setPlaybackRate(prefs.rate);
+        setReady(true);
       })
       .catch(() => setError("YouTube oynatıcısı yüklenemedi. İnternet bağlantını kontrol et."));
 
@@ -177,6 +203,126 @@ export function SourcePlayer({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Tam ekran: video + kontrol şeridi birlikte. Önce tarayıcının gerçek tam ekranı denenir; tarayıcı
+  // reddederse (ör. iPhone Safari, uygulama içi tarayıcılar) "pencere içi tam ekran"a geçilir:
+  // oynatıcı pencerenin tamamını kaplar, Esc ya da F ile çıkılır.
+  const [windowFullscreen, setWindowFullscreen] = useState(false);
+  const fullscreenRef = useRef(false);
+  fullscreenRef.current = fullscreen || windowFullscreen;
+
+  const toggleFullscreen = useCallback(() => {
+    if (document.fullscreenElement) return void document.exitFullscreen();
+    if (fullscreenRef.current) return setWindowFullscreen(false);
+    const frame = frameRef.current;
+    if (!frame?.requestFullscreen) return setWindowFullscreen(true);
+    // Bazı gömülü tarayıcılar isteği ne kabul eder ne reddeder (söz hiç sonuçlanmaz); kısa sürede
+    // tam ekrana geçilmezse pencere içi moda düş.
+    const fallback = setTimeout(() => {
+      if (document.fullscreenElement !== frame) setWindowFullscreen(true);
+    }, 400);
+    frame.requestFullscreen().then(
+      () => clearTimeout(fallback),
+      () => {
+        clearTimeout(fallback);
+        setWindowFullscreen(true);
+      },
+    );
+  }, []);
+  useEffect(() => {
+    const onChange = () => {
+      const native = document.fullscreenElement === frameRef.current;
+      setFullscreen(native);
+      // Gerçek tam ekran sonradan geldiyse pencere içi mod gereksiz.
+      if (native) setWindowFullscreen(false);
+    };
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+  useEffect(() => {
+    if (!windowFullscreen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key === "Escape") setWindowFullscreen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [windowFullscreen]);
+  const anyFullscreen = fullscreen || windowFullscreen;
+
+  // Tam ekranda kontrol paneli videonun üstünde durur (kullanıcının bilinçli tercihi; YouTube politikası
+  // oynatıcının üstüne öğe koymayı yasaklar — bkz. DESIGN.md). Fare hareket edince görünür, oynarken
+  // 2,5 sn hareketsizlikte kaybolur; duraklatılmışken ya da fare panelin üstündeyken açık kalır.
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const overControlsRef = useRef(false);
+  const playingRef = useRef(playing);
+  playingRef.current = playing;
+
+  const scheduleHide = useCallback(() => {
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    hideTimerRef.current = setTimeout(() => {
+      if (playingRef.current && !overControlsRef.current) setControlsVisible(false);
+    }, CONTROLS_HIDE_MS);
+  }, []);
+  const revealControls = useCallback(() => {
+    setControlsVisible(true);
+    scheduleHide();
+  }, [scheduleHide]);
+  // Tam ekrana geçerken fare tam ekran düğmesinin üstündeydi; düzen değişince "pointerleave" fare
+  // kıpırdayana kadar gelmez. Paneli üstünde sayma, yoksa hiç gizlenmez.
+  useEffect(() => {
+    overControlsRef.current = false;
+  }, [anyFullscreen]);
+  useEffect(() => {
+    if (anyFullscreen && playing) return scheduleHide();
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    setControlsVisible(true);
+  }, [anyFullscreen, playing, scheduleHide]);
+  useEffect(() => () => {
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+  }, []);
+
+  // Kısayollar: yalnızca Boşluk (oynat/duraklat) ve F (tam ekran). Yazı alanlarında devre dışı.
+  useEffect(() => {
+    const isTyping = (el: EventTarget | null) =>
+      el instanceof HTMLElement && (el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName));
+    const onKeyDown = (e: globalThis.KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e.target) || document.querySelector("dialog[open]")) return;
+      const player = playerRef.current;
+      if (!player) return;
+      if (e.code === "Space") {
+        // Odaktaki düğmenin Boşluk ile tıklanmasını engelle; tek davranış oynat/duraklat.
+        e.preventDefault();
+        if (e.repeat) return;
+        if (player.getPlayerState() === PlayerState.PLAYING) player.pauseVideo();
+        else player.playVideo();
+      } else if (e.key === "f" || e.key === "F") {
+        e.preventDefault();
+        toggleFullscreen();
+      }
+    };
+    const onKeyUp = (e: globalThis.KeyboardEvent) => {
+      if (e.code === "Space" && !isTyping(e.target)) e.preventDefault();
+    };
+    // Videoya tıklanınca odak YouTube iframe'ine geçer ve kısayollar oraya gider; odağı geri al.
+    const onBlur = () =>
+      setTimeout(() => {
+        if (document.activeElement === playerRef.current?.getIframe()) frameRef.current?.focus({ preventScroll: true });
+      }, 0);
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("blur", onBlur);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("blur", onBlur);
+    };
+  }, [toggleFullscreen]);
 
   // Çalan video listede görünür kalsın. scrollIntoView sayfayı da kaydırdığı için yalnızca liste kutusu kaydırılır.
   const listRef = useRef<HTMLOListElement>(null);
@@ -231,8 +377,66 @@ export function SourcePlayer({
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="flex flex-col gap-3">
-          <div className="aspect-video overflow-hidden rounded-lg bg-black shadow-card">
-            <div ref={mountRef} className="size-full [&>div]:size-full [&_iframe]:size-full" />
+          <div
+            ref={frameRef}
+            tabIndex={-1}
+            className={cn(
+              "flex flex-col overflow-hidden bg-black outline-none",
+              // Not: "relative" ile "fixed" aynı özelliği ayarlar; ikisi birlikte verilirse fixed ezilir.
+              fullscreen
+                ? "relative h-full w-full"
+                : windowFullscreen
+                  ? "fixed inset-0 z-50 h-dvh w-screen"
+                  : "relative rounded-lg border border-border shadow-card",
+            )}
+          >
+            <div className={cn("bg-black", anyFullscreen ? "absolute inset-0" : "aspect-video")}>
+              <div ref={mountRef} className="size-full [&>div]:size-full [&_iframe]:size-full" />
+            </div>
+            {anyFullscreen && (
+              // YouTube iframe'i fare hareketini sayfaya iletmez; hareketi ve tıklamayı bu şeffaf katman yakalar.
+              <div
+                aria-hidden
+                onPointerMove={revealControls}
+                onClick={() => {
+                  const player = playerRef.current;
+                  if (!player) return;
+                  if (player.getPlayerState() === PlayerState.PLAYING) player.pauseVideo();
+                  else player.playVideo();
+                  revealControls();
+                }}
+                onDoubleClick={toggleFullscreen}
+                className={cn("absolute inset-0 z-10", !controlsVisible && "cursor-none")}
+              />
+            )}
+            <div
+              onPointerEnter={() => {
+                overControlsRef.current = true;
+                setControlsVisible(true);
+              }}
+              onPointerLeave={() => {
+                overControlsRef.current = false;
+                if (anyFullscreen) scheduleHide();
+              }}
+              className={cn(
+                anyFullscreen && "absolute inset-x-0 bottom-0 z-20 transition-opacity duration-base ease-calm",
+                anyFullscreen && !controlsVisible && "pointer-events-none opacity-0",
+              )}
+            >
+              <VideoControls
+                playerRef={playerRef}
+                ready={ready}
+                playing={playing}
+                fullscreen={anyFullscreen}
+                overlay={anyFullscreen}
+                hasPrev={current > 0}
+                hasNext={current < items.length - 1}
+                onPrev={() => playIndex(current - 1)}
+                onNext={() => playIndex(current + 1)}
+                onToggleFullscreen={toggleFullscreen}
+                onReleaseFocus={() => frameRef.current?.focus({ preventScroll: true })}
+              />
+            </div>
           </div>
           {currentItem && (
             <div className="flex flex-wrap items-start justify-between gap-3">
