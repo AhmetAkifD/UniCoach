@@ -63,6 +63,7 @@ npm run dev          # API → http://localhost:4000, web → http://localhost:3
   Start-Service postgresql-x64-18
   ```
 
+- Yüklenen PDF'ler `apps/api/storage/` altında durur (git'e girmez). Silmek için bu klasörü silebilirsiniz; veritabanındaki kayıtlar dosyasız kalır.
 - `npm run build` ya da `prisma generate` çalıştırmadan önce `npm run dev`'i durdurun: Windows'ta çalışan API, Prisma'nın motor dosyasını kilitler (`EPERM` hatası).
 
 ## Mimari

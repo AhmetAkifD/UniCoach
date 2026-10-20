@@ -15,6 +15,8 @@ async function bootstrap() {
   app.enableShutdownHooks();
 
   const port = Number(process.env.API_PORT ?? 4000);
+  // 300 MB'lık PDF yavaş bağlantıda Node'un 5 dakikalık varsayılan istek süresini aşabilir.
+  app.getHttpServer().requestTimeout = 60 * 60 * 1000;
   await app.listen(port, "0.0.0.0");
   Logger.log(`UniCoach API http://localhost:${port}/api adresinde çalışıyor`, "Bootstrap");
 }

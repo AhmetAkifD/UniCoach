@@ -20,6 +20,7 @@ import type {
   UpdateProfileInput,
   UpdateSourceInput,
 } from "./library";
+import type { BookProgressInput, BookSummary, CreateBookInput, UpdateBookInput } from "./question-bank";
 
 export const USER_ROLES = ["STUDENT", "ADMIN"] as const;
 export type UserRole = (typeof USER_ROLES)[number];
@@ -102,6 +103,21 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
           `/sources/${encodeURIComponent(id)}/items/${encodeURIComponent(itemId)}/progress`,
           input,
         ),
+    },
+    /**
+     * Soru Bankası. Dosyanın kendisi bu istemciyle gönderilmez: yükleme ilerlemesi gösterilebilsin diye
+     * web XHR ile (mobil kendi dosya API'siyle) `filePath(id)` adresine `PUT`, gövde ham PDF olarak gönderir.
+     */
+    books: {
+      list: () => request<BookSummary[]>("/books", { cache: "no-store" }),
+      get: (id: string) => request<BookSummary>(`/books/${encodeURIComponent(id)}`, { cache: "no-store" }),
+      create: (input: CreateBookInput) => post<BookSummary>("/books", input),
+      update: (id: string, input: UpdateBookInput) => send<BookSummary>("PATCH", `/books/${encodeURIComponent(id)}`, input),
+      remove: (id: string) => send<void>("DELETE", `/books/${encodeURIComponent(id)}`),
+      saveProgress: (id: string, input: BookProgressInput) =>
+        send<BookSummary>("PUT", `/books/${encodeURIComponent(id)}/progress`, input),
+      /** PDF dosyasının adresi (GET: indirme/Range ile okuma, PUT: yükleme). */
+      filePath: (id: string) => `${baseUrl}/api/books/${encodeURIComponent(id)}/file`,
     },
   };
 }

@@ -10,3 +10,4 @@
 .claude
 docs
 *.log
+**/storage

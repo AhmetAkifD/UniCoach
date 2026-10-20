@@ -1,31 +1,15 @@
 import Link from "next/link";
 import { Info, Library, SearchX } from "lucide-react";
-import { SUBJECTS, findSubject, type ExamTrack, type SourceSummary, type SubjectExam } from "@unicoach/shared";
+import type { SourceSummary } from "@unicoach/shared";
 import { AddSourceButton } from "@/components/library/add-source-dialog";
-import { LibraryFilters, type FilterOption } from "@/components/library/library-filters";
+import { LibraryFilters } from "@/components/library/library-filters";
 import { SourceCard } from "@/components/library/source-card";
 import { Card } from "@/components/ui/card";
 import { authedApi, requireUser } from "@/lib/session";
 import { subjectColor } from "@/lib/subject-color";
+import { subjectFilters } from "@/lib/subject-filters";
 
 export const metadata = { title: "Konu Anlatımı" };
-
-/** İlk filtre satırı. YDT yalnızca o sınava ait kaynak varsa gösterilir. */
-const EXAM_CHIPS: SubjectExam[] = ["TYT", "AYT", "YDT", "LGS"];
-
-/** Dersler: önce öğrencinin sınavı, sonra diğeri; her grupta sabit ders sırası. */
-function orderedSubjects(track: ExamTrack | null) {
-  const first = track ?? "YKS";
-  return [...SUBJECTS.filter((s) => s.track === first), ...SUBJECTS.filter((s) => s.track !== first)];
-}
-
-function href(exam: SubjectExam | null, ders: string | null) {
-  const params = new URLSearchParams();
-  if (exam) params.set("sinav", exam.toLowerCase());
-  if (ders) params.set("ders", ders);
-  const query = params.toString();
-  return query ? `/konular?${query}` : "/konular";
-}
 
 export default async function LibraryPage({
   searchParams,
@@ -34,43 +18,11 @@ export default async function LibraryPage({
 }) {
   const [user, query] = await Promise.all([requireUser(), searchParams]);
   const sources: SourceSummary[] = await (await authedApi()).sources.list();
-  const subjects = orderedSubjects(user.examTrack);
-  const subjectOf = (s: SourceSummary) => findSubject(s.subject);
-
-  // 1. satır: sınav
-  const exam = EXAM_CHIPS.find((e) => e.toLowerCase() === query.sinav) ?? null;
-  const inExam = exam ? sources.filter((s) => subjectOf(s)?.exam === exam) : sources;
-
-  // 2. satır: yalnızca seçili sınavda kaynağı olan dersler
-  const dersOrder = [...new Map(subjects.map((s) => [s.ders, s.dersLabel])).entries()];
-  const dersCounts = new Map<string, number>();
-  for (const s of inExam) {
-    const key = subjectOf(s)?.ders;
-    if (key) dersCounts.set(key, (dersCounts.get(key) ?? 0) + 1);
-  }
-  const ders = query.ders && dersCounts.has(query.ders) ? query.ders : null;
-  const visible = ders ? inExam.filter((s) => subjectOf(s)?.ders === ders) : inExam;
-
-  const examOptions: FilterOption[] = [
-    { value: null, label: "Tümü", count: sources.length, href: href(null, ders) },
-    ...EXAM_CHIPS.flatMap((e) => {
-      const inThis = sources.filter((s) => subjectOf(s)?.exam === e);
-      if (e === "YDT" && inThis.length === 0 && exam !== "YDT") return [];
-      // Sınav değişince ders, yeni sınavda da varsa korunur.
-      const keepDers = ders && inThis.some((s) => subjectOf(s)?.ders === ders) ? ders : null;
-      return [{ value: e.toLowerCase(), label: e, count: inThis.length, href: href(e, keepDers) }];
-    }),
-  ];
-  const dersOptions: FilterOption[] = [
-    { value: null, label: "Tümü", count: inExam.length, href: href(exam, null) },
-    ...dersOrder
-      .filter(([key]) => dersCounts.has(key))
-      .map(([key, label]) => ({ value: key, label, count: dersCounts.get(key)!, href: href(exam, key) })),
-  ];
-
-  const groups = subjects
-    .map((subject) => ({ subject, sources: visible.filter((s) => s.subject === subject.id) }))
-    .filter((g) => g.sources.length > 0);
+  const { exam, ders, examOptions, dersOptions, groups } = subjectFilters(sources, {
+    basePath: "/konular",
+    track: user.examTrack,
+    query,
+  });
 
   return (
     <div className="flex flex-col gap-8">
@@ -119,7 +71,7 @@ export default async function LibraryPage({
           </Link>
         </Card>
       ) : (
-        groups.map(({ subject, sources }) => {
+        groups.map(({ subject, items: sources }) => {
           const color = subjectColor(subject.id);
           return (
             <section key={subject.id} aria-labelledby={`ders-${subject.id}`} className="flex flex-col gap-4">

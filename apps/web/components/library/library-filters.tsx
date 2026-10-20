@@ -10,7 +10,7 @@ export interface FilterOption {
   href: string;
 }
 
-/** Konu Anlatımı filtreleri: 1. satır sınav, 2. satır ders. Seçim URL'de tutulur (?sinav=…&ders=…). */
+/** Konu Anlatımı ve Soru Bankası filtreleri: 1. satır sınav, 2. satır ders. Seçim URL'de tutulur (?sinav=…&ders=…). */
 export function LibraryFilters({
   exams,
   dersler,

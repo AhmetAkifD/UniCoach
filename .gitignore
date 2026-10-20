@@ -17,3 +17,6 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 .idea/
+
+# Yüklenen PDF dosyaları (apps/api/storage)
+storage/

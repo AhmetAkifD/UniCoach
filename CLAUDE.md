@@ -1,7 +1,7 @@
 # UniCoach — proje notları
 
 YKS/LGS öğrenci yardım sistemi (ders projesi). Önce web, sonra **aynı API'yi kullanan** mobil uygulama.
-Modüller: konu anlatımı (YouTube linkleri), soru bankası, geçmiş sorulardan sınav, YKS tercih. Kapsam YKS (TYT/AYT) ve LGS; tercih modülü yalnızca YKS içindir. İçerik admin panelinden girilir, ayrıca seed verisi bulunur.
+Modüller: konu anlatımı (YouTube linkleri), soru bankası, geçmiş sorulardan sınav, YKS tercih. Kapsam YKS (TYT/AYT) ve LGS; tercih modülü yalnızca YKS içindir. İçeriği öğrenci kendisi ekler (YouTube bağlantıları, soru kitabı PDF'leri).
 
 ## Yapı (npm workspaces)
 
@@ -31,6 +31,7 @@ Paketler `dist/` dizinine derlenir (CommonJS). Uygulamalardan önce `npm run bui
 - **Web route grupları:** `app/(app)/*` giriş gerektirir (layout'ta `requireUser()`), `app/(auth)/*` giriş ve kayıt ekranlarıdır. Doğrulama kuralları `packages/shared/src/auth.ts` içindeki zod şemalarıdır; form, API ve mobil aynı şemayı kullanır.
 - **Konu Anlatımı = öğrencinin kişisel YouTube kütüphanesi** (resmî müfredat ya da konu bölümü yok). Ders (sabit liste, `SUBJECTS` — packages/shared/src/library.ts; TYT/AYT/LGS dersleri ayrı) → kaynak grubu (`Source`: eklenen video ya da oynatma listesi, yeniden adlandırılabilir) → videolar (`SourceItem`, YouTube sırasıyla `position`; aynı video listede iki kez geçebilir). Kaynaklar yalnızca ekleyen öğrenciye görünür; ilerleme (`positionSec`, `watchedAt`) doğrudan `SourceItem`'da tutulur.
 - **YouTube API anahtarı kullanılmaz.** Liste videoları tarayıcıda IFrame oynatıcının `getPlaylist()` metoduyla (en fazla 200, `PLAYLIST_MAX_ITEMS`) alınıp API'ye gönderilir; başlıklar API'de oEmbed ile çekilir (`apps/api/src/sources/youtube.ts`). Video bitince ya da %90'ı geçince (`WATCHED_THRESHOLD`) izlendi sayılır.
+- **Soru Bankası = öğrencinin soru kitabı PDF deposu** (soru/şık girişi yok; soru çözme ve doğru/yanlış hesabı ileride ayrı "Çalışma alanı" modülünde). Ders (`SUBJECTS`) + isteğe bağlı serbest konu etiketi (`QuestionBook.topic`). Yükleme iki adımlıdır: `POST /api/books` (ad, ders, konu, boyut) → `PUT /api/books/:id/file` gövdesi ham PDF (`Content-Type: application/pdf`; web'de ilerleme için XHR, `lib/upload.ts`). En fazla 300 MB (`BOOK_MAX_BYTES`), ilk baytlar `%PDF-` olmalı. Dosyalar diskte `UPLOAD_DIR/books/<id>.pdf` (varsayılan `apps/api/storage`, Docker'da `uploads` volume'u). `GET /api/books/:id/file` Range destekler; web görüntüleyicisi (pdf.js, `lib/pdf.ts`) yalnızca gereken sayfaları indirir. Kalınan sayfa `lastPage`, sayfa sayısı ilk açılışta `pageCount` olarak kaydedilir. Next rewrite'ı büyük yükleme için `experimental.proxyClientMaxBodySize` ile açıldı.
 - Öğrencinin sınavı (`User.examTrack`: YKS/LGS) kayıtta seçilir, `/profil`'den değişir. Başka sınavın dersine kaynak eklemek engellenmez, yalnızca hatırlatma gösterilir.
 - Arayüzde elle yazılmış örnek/sahte veri gösterilmez. Veri yoksa boş durum (empty state) gösterilir.
 - Bağımlılık sürümleri: NestJS 11 (12 yalnızca ESM), Prisma 6, TypeScript 5.9 bilinçli olarak seçildi. Yükseltme ayrı bir iş olarak ele alınır.
@@ -53,7 +54,8 @@ docker compose up --build                     # tam sistem (db + api + web)
 0. ✅ İskelet, Docker, tasarım sistemi
 1. Auth (öğrenci/admin) ve içerik veri modeli — ✅ giriş/kayıt; ⏳ admin rolü, içerik modeli
 2. ✅ Konu anlatımı (kişisel YouTube kütüphanesi; ana sayfadaki "Konu ilerlemen" kartı henüz bağlanmadı)
-3. Soru bankası
+3. ✅ Soru bankası (PDF deposu + görüntüleyici)
+3b. Çalışma alanı (soru çözme, doğru/yanlış hesabı — kapsamı henüz belirlenmedi)
 4. Geçmiş sınavlar
 5. YKS tercih
 6. Mobil uygulama
