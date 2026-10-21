@@ -28,6 +28,10 @@ services:
       WEB_ORIGIN: http://localhost:3000
       # Oturum belirteçlerini imzalar. Gerçek bir sunucuda mutlaka değiştirin.
       JWT_SECRET: ${JWT_SECRET:-unicoach-docker-dev-secret}
+      # Soru Bankası PDF'leri; konteyner yeniden kurulsa da kaybolmasın diye volume'da tutulur.
+      UPLOAD_DIR: /data/uploads
+    volumes:
+      - uploads:/data/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -57,3 +61,4 @@ services:
 
 volumes:
   db-data:
+  uploads:

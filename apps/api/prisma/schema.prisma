@@ -32,6 +32,7 @@ model User {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
   sources      Source[]
+  books        QuestionBook[]
 }
 
 enum SourceKind {
@@ -81,4 +82,59 @@ model SourceItem {
   updatedAt   DateTime  @updatedAt
 
   @@unique([sourceId, position])
+}
+
+/// Soru Bankası: öğrencinin yüklediği soru kitabı PDF'i. Dosya diskte (UPLOAD_DIR/books/<id>.pdf) durur.
+/// Yalnızca yükleyen öğrenciye görünür.
+model QuestionBook {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// packages/shared → SUBJECTS kimliği
+  subject    String
+  /// Başta dosya adıdır; öğrenci değiştirebilir.
+  title      String
+  /// Serbest konu etiketi (isteğe bağlı)
+  topic      String?
+  sizeBytes  Int
+  /// PDF ilk kez açılınca görüntüleyici bildirir.
+  pageCount  Int?
+  /// Kalınan sayfa (1'den başlar)
+  lastPage   Int       @default(1)
+  /// Soru çıkarma ayarları (öğrenci seçer): "auto" | "text" | "ocr"
+  detectMethod String    @default("auto")
+  /// Cevap anahtarının yeri: "auto" | "lastPages" | "pageBottom" | "none"
+  keyMethod    String    @default("auto")
+  /// Dosya tamamen yüklenince dolar; boşsa kayıt listede görünmez.
+  uploadedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  questions  BookQuestion[]
+
+  @@index([userId, subject])
+}
+
+/// PDF'ten çıkarılmış soru: metni değil, sayfadaki yeri (PDF noktası, sol üstten) ve cevabı saklanır.
+model BookQuestion {
+  id          String       @id @default(cuid())
+  bookId      String
+  book        QuestionBook @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  /// Test/bölüm adı; numara bölüm içinde tekildir.
+  section     String
+  number      Int
+  page        Int
+  x           Float
+  y           Float
+  w           Float
+  h           Float
+  choiceCount Int          @default(5)
+  /// "A"–"E"; bilinmiyorsa boş
+  answer      String?
+  /// Şık metinleri (öneri; metin katmanı ya da OCR)
+  choices     String[]
+  /// Kaydedilme sırası (PDF'teki sıra)
+  position    Int
+
+  @@unique([bookId, section, number])
+  @@index([bookId, position])
 }

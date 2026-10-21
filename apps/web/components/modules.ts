@@ -23,9 +23,10 @@ export const modules: ModuleInfo[] = [
   {
     href: "/soru-bankasi",
     title: "Soru Bankası",
-    description: "Konuya ve zorluğa göre filtrelenen sorular, çözümler ve yanlış defterin.",
+    description: "Soru kitaplarının PDF'leri, derslerine ve konularına göre. Kaldığın sayfadan devam et.",
     icon: BookOpenText,
     phase: 3,
+    ready: true,
   },
   {
     href: "/sinavlar",
