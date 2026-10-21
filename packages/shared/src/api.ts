@@ -28,6 +28,7 @@ import type {
   SaveBookQuestionsInput,
   UpdateBookInput,
 } from "./question-bank";
+import type { CreateExamInput, ExamAnswerInput, ExamDetail, ExamQuestion, ExamSummary, ExtendExamInput } from "./exam-session";
 
 export const USER_ROLES = ["STUDENT", "ADMIN"] as const;
 export type UserRole = (typeof USER_ROLES)[number];
@@ -129,6 +130,22 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
         send<BookQuestion[]>("PUT", `/books/${encodeURIComponent(id)}/questions`, input),
       /** PDF dosyasının adresi (GET: indirme/Range ile okuma, PUT: yükleme). */
       filePath: (id: string) => `${baseUrl}/api/books/${encodeURIComponent(id)}/file`,
+    },
+    /** Geçmiş Sınavlar: Soru Bankası'nda çıkarılan testlerden süreli deneme. */
+    exams: {
+      list: () => request<ExamSummary[]>("/exams", { cache: "no-store" }),
+      get: (id: string) => request<ExamDetail>(`/exams/${encodeURIComponent(id)}`, { cache: "no-store" }),
+      create: (input: CreateExamInput) => post<ExamDetail>("/exams", input),
+      answer: (id: string, questionId: string, input: ExamAnswerInput) =>
+        send<ExamQuestion>("PUT", `/exams/${encodeURIComponent(id)}/answers/${encodeURIComponent(questionId)}`, input),
+      finish: (id: string) => send<ExamDetail>("POST", `/exams/${encodeURIComponent(id)}/finish`),
+      pause: (id: string) => send<ExamDetail>("POST", `/exams/${encodeURIComponent(id)}/pause`),
+      /** Devam ettirir; sorular kaynaktan (Soru Bankası) yeniden okunur, düzeltmeler sınava yansır. */
+      resume: (id: string) => send<ExamDetail>("POST", `/exams/${encodeURIComponent(id)}/resume`),
+      extend: (id: string, input: ExtendExamInput) => send<ExamDetail>("POST", `/exams/${encodeURIComponent(id)}/extend`, input),
+      /** Bitmiş sınavı kaynaktaki düzeltmelerle yeniden hesaplar. */
+      sync: (id: string) => send<ExamDetail>("POST", `/exams/${encodeURIComponent(id)}/sync`),
+      remove: (id: string) => send<void>("DELETE", `/exams/${encodeURIComponent(id)}`),
     },
   };
 }

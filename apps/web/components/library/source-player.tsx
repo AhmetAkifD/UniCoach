@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { useDialog } from "@/components/ui/use-dialog";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { browserApi } from "@/lib/api";
 import { cn } from "@/lib/cn";
@@ -561,6 +562,7 @@ function SourceHeader({
   const [subject, setSubject] = useState(source.subject);
   const [error, setError] = useState<string>();
   const [pending, startTransition] = useTransition();
+  const { confirm, dialog } = useDialog();
 
   function run(action: () => Promise<unknown>, after: () => void) {
     setError(undefined);
@@ -576,6 +578,7 @@ function SourceHeader({
 
   return (
     <header className="flex flex-col gap-4">
+      {dialog}
       {editing ? (
         <form
           className="flex flex-col gap-2 sm:flex-row sm:items-start"
@@ -659,8 +662,12 @@ function SourceHeader({
             variant="danger"
             disabled={pending}
             onClick={() => {
-              if (!window.confirm("Bu kaynak ve izleme ilerlemesi kütüphanenden silinsin mi?")) return;
-              run(() => browserApi.sources.remove(source.id), onDeleted);
+              void confirm({
+                title: "Kaynağı sil",
+                message: "Bu kaynak ve izleme ilerlemesi kütüphanenden silinsin mi?",
+                confirmLabel: "Sil",
+                danger: true,
+              }).then((ok) => ok && run(() => browserApi.sources.remove(source.id), onDeleted));
             }}
           >
             <Trash2 className="size-4" aria-hidden /> Kaynağı sil

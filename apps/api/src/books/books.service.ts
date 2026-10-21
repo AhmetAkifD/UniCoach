@@ -144,14 +144,31 @@ export class BooksService {
     return rows.map(toQuestion);
   }
 
-  /** Düzenleyici PDF'in tüm sorularını gönderir; eski liste tek işlemde yenisiyle değiştirilir. */
+  /**
+   * Düzenleyici PDF'in tüm sorularını gönderir. Listede olmayanlar silinir, kimliği gelenler güncellenir
+   * (yalnızca değişenler), yeniler eklenir. Kimlikler korunur ki sınavlardaki "kaynağında düzenle" bağlantısı kopmasın.
+   */
   async saveQuestions(userId: string, id: string, input: SaveBookQuestionsInput): Promise<BookQuestion[]> {
     await this.findUploaded(userId, id);
+    const existing = new Map(
+      (await this.prisma.bookQuestion.findMany({ where: { bookId: id } })).map((q) => [q.id, q]),
+    );
+    const rows = input.questions.map(({ id: qid, ...q }, position) => ({
+      id: qid && existing.has(qid) ? qid : undefined,
+      data: { ...q, choices: q.choices.slice(0, q.choiceCount), position },
+    }));
+    const keep = new Set(rows.flatMap((r) => (r.id ? [r.id] : [])));
+    const changed = rows.filter((r) => {
+      if (!r.id) return false;
+      const old = existing.get(r.id)!;
+      return (Object.keys(r.data) as (keyof typeof r.data)[]).some(
+        (k) => JSON.stringify(old[k]) !== JSON.stringify(r.data[k]),
+      );
+    });
     await this.prisma.$transaction([
-      this.prisma.bookQuestion.deleteMany({ where: { bookId: id } }),
-      this.prisma.bookQuestion.createMany({
-        data: input.questions.map((q, position) => ({ ...q, choices: q.choices.slice(0, q.choiceCount), bookId: id, position })),
-      }),
+      this.prisma.bookQuestion.deleteMany({ where: { bookId: id, id: { notIn: [...keep] } } }),
+      ...changed.map((r) => this.prisma.bookQuestion.update({ where: { id: r.id }, data: r.data })),
+      this.prisma.bookQuestion.createMany({ data: rows.filter((r) => !r.id).map((r) => ({ ...r.data, bookId: id })) }),
     ]);
     return this.questions(userId, id);
   }

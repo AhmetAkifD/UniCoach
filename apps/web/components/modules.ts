@@ -31,9 +31,10 @@ export const modules: ModuleInfo[] = [
   {
     href: "/sinavlar",
     title: "Geçmiş Sınavlar",
-    description: "Çıkmış sorularla süreli deneme. Net hesabı ve konu bazlı analiz.",
+    description: "Soru Bankası'ndan çıkardığın testlerle süreli deneme. Netini gör, yanlışlarını gözden geçir.",
     icon: ClipboardList,
     phase: 4,
+    ready: true,
   },
   {
     href: "/tercih",

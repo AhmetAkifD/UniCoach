@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { ArrowRight, BookOpenCheck, CircleCheck, CircleAlert, Flame, Target, TrendingUp } from "lucide-react";
-import type { HealthResponse } from "@unicoach/shared";
+import { formatNet, type ExamSummary, type HealthResponse } from "@unicoach/shared";
 import { Badge } from "@/components/ui/badge";
 import { buttonClasses } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { modules } from "@/components/modules";
 import { serverApi } from "@/lib/api";
-import { getSession } from "@/lib/session";
+import { authedApi, getSession } from "@/lib/session";
 
 async function getHealth(): Promise<HealthResponse | null> {
   try {
@@ -17,9 +17,18 @@ async function getHealth(): Promise<HealthResponse | null> {
   }
 }
 
+/** Son biten deneme (ana sayfa kartı); API'ye ulaşılamazsa boş. */
+async function getLastExam(): Promise<ExamSummary | null> {
+  try {
+    return (await (await authedApi()).exams.list()).find((e) => e.finishedAt) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export default async function HomePage() {
   // Layout oturumu zaten doğruladı; getSession istek başına önbelleklenir.
-  const [user, health] = await Promise.all([getSession(), getHealth()]);
+  const [user, health, lastExam] = await Promise.all([getSession(), getHealth(), getLastExam()]);
   const firstName = user?.firstName ?? "";
 
   return (
@@ -35,7 +44,18 @@ export default async function HomePage() {
       </section>
 
       <section aria-label="Özet" className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="Son deneme" value="—" hint="Henüz deneme çözmedin." icon={<TrendingUp className="size-5" />} />
+        <Link href={lastExam ? `/sinavlar/${lastExam.id}` : "/sinavlar"} className="rounded-lg">
+          <StatCard
+            label="Son deneme"
+            value={lastExam ? formatNet(lastExam.net ?? 0) : "—"}
+            hint={
+              lastExam
+                ? `${lastExam.title} · ${lastExam.correct} D, ${lastExam.wrong} Y`
+                : "Henüz deneme çözmedin."
+            }
+            icon={<TrendingUp className="size-5" />}
+          />
+        </Link>
         <StatCard label="Çalışma serisi" value="—" hint="İlk çalışmanla seri başlar." icon={<Flame className="size-5" />} />
         <StatCard label="Bugünkü hedef" value="—" hint="Henüz soru çözmedin." icon={<Target className="size-5" />} />
       </section>
