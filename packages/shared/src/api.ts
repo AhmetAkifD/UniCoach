@@ -29,6 +29,7 @@ import type {
   UpdateBookInput,
 } from "./question-bank";
 import type { CreateExamInput, ExamAnswerInput, ExamDetail, ExamQuestion, ExamSummary, ExtendExamInput } from "./exam-session";
+import type { SaveYksResultInput, YksResult } from "./yks-result";
 
 export const USER_ROLES = ["STUDENT", "ADMIN"] as const;
 export type UserRole = (typeof USER_ROLES)[number];
@@ -146,6 +147,12 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       /** Bitmiş sınavı kaynaktaki düzeltmelerle yeniden hesaplar. */
       sync: (id: string) => send<ExamDetail>("POST", `/exams/${encodeURIComponent(id)}/sync`),
       remove: (id: string) => send<void>("DELETE", `/exams/${encodeURIComponent(id)}`),
+    },
+    /** YKS Tercih: sınav sonuçları (yıl başına bir kayıt; aynı yıl yeniden kaydedilince üzerine yazılır). */
+    results: {
+      list: () => request<YksResult[]>("/results", { cache: "no-store" }),
+      save: (year: number, input: SaveYksResultInput) => send<YksResult>("PUT", `/results/${year}`, input),
+      remove: (year: number) => send<void>("DELETE", `/results/${year}`),
     },
   };
 }

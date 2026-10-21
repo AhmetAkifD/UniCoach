@@ -42,5 +42,6 @@ export const modules: ModuleInfo[] = [
     description: "Puanını hesapla, taban puan ve başarı sırasına göre programları keşfet, listeni oluştur.",
     icon: GraduationCap,
     phase: 5,
+    ready: true,
   },
 ];

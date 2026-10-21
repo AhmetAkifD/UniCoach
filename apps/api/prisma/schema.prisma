@@ -34,6 +34,7 @@ model User {
   sources      Source[]
   books        QuestionBook[]
   exams        Exam[]
+  yksResults   YksResult[]
 }
 
 enum SourceKind {
@@ -196,4 +197,24 @@ model ExamQuestion {
   answeredAt     DateTime?
 
   @@unique([examId, position])
+}
+
+/// YKS Tercih: öğrencinin bir yılın YKS sonucu. Belgeden okunur ya da elle girilir; kimlik bilgisi saklanmaz.
+model YksResult {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  year         Int
+  /// "document" | "manual"
+  source       String
+  diplomaGrade Float?
+  obp          Float?
+  /// packages/shared → YksScore[] (puan türü, puan, başarı sırası, yerleştirme ve ek puanlı değerler)
+  scores       Json
+  /// packages/shared → YksTest[] (oturum, test adı, doğru, yanlış)
+  tests        Json
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, year])
 }
