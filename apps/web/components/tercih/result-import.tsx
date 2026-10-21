@@ -90,7 +90,7 @@ export function ResultImport({ savedYears, accountName }: { savedYears: number[]
       {dialog}
       <Card className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
-          <h2 className="font-semibold">Sonuç belgenden ekle</h2>
+          <h3 className="font-semibold">ÖSYM sonuç belgen</h3>
           <p className="text-sm text-text-muted">
             ÖSYM Sonuç Açıklama Sistemi'nde YKS sonucunu aç ve sayfayı PDF olarak kaydet (Yazdır → PDF olarak kaydet).
           </p>
@@ -153,9 +153,9 @@ export function ResultImport({ savedYears, accountName }: { savedYears: number[]
       {parsed && (
         <section className="flex flex-col gap-4" aria-labelledby="preview-title">
           <div className="flex flex-wrap items-center gap-3">
-            <h2 id="preview-title" className="text-xl font-semibold tracking-tight">
+            <h3 id="preview-title" className="text-lg font-semibold tracking-tight">
               {parsed.year} YKS sonucu
-            </h2>
+            </h3>
             <Badge tone="info">Önizleme</Badge>
           </div>
           {nameMismatch && (

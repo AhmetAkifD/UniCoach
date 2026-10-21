@@ -18,6 +18,10 @@ export const RESULT_SCORE_LABELS: Record<ResultScoreType, string> = {
   DIL: "Dil",
 };
 
+/** ÖSYM belgesindeki satır adları: ham puan satırı ("SAY") ve yerleştirme satırı ("Y-SAY") */
+export const RESULT_SCORE_CODES: Record<ResultScoreType, string> = { TYT: "TYT", SAY: "SAY", SOZ: "SÖZ", EA: "EA", DIL: "DİL" };
+export const placementCode = (type: ResultScoreType) => `Y-${RESULT_SCORE_CODES[type]}`;
+
 export const RESULT_SOURCES = ["document", "manual"] as const;
 export type ResultSource = (typeof RESULT_SOURCES)[number];
 
@@ -48,7 +52,31 @@ export const yksTestSchema = z.object({
   wrong: z.number().int().min(0).max(80),
 });
 
-/** PUT /api/results/:year — aynı yılın sonucu varsa üzerine yazılır. */
+/** Sonuç belgesindeki testler ve soru sayıları; elle girişte bu sırayla sorulur (adlar belgedekiyle aynı). */
+export const YKS_RESULT_TESTS: { session: ResultSession; name: string; questions: number }[] = [
+  { session: "TYT", name: "Türkçe", questions: 40 },
+  { session: "TYT", name: "Sosyal Bilimler", questions: 20 },
+  { session: "TYT", name: "Temel Matematik", questions: 40 },
+  { session: "TYT", name: "Fen Bilimleri", questions: 20 },
+  { session: "AYT", name: "Türk Dili ve Edebiyatı", questions: 24 },
+  { session: "AYT", name: "Tarih - 1", questions: 10 },
+  { session: "AYT", name: "Coğrafya - 1", questions: 6 },
+  { session: "AYT", name: "Tarih - 2", questions: 11 },
+  { session: "AYT", name: "Coğrafya - 2", questions: 11 },
+  { session: "AYT", name: "Felsefe Grubu", questions: 12 },
+  { session: "AYT", name: "DKAB/İlave Felsefe Grubu", questions: 6 },
+  { session: "AYT", name: "Matematik", questions: 40 },
+  { session: "AYT", name: "Fizik", questions: 14 },
+  { session: "AYT", name: "Kimya", questions: 13 },
+  { session: "AYT", name: "Biyoloji", questions: 13 },
+  { session: "YDT", name: "Yabancı Dil", questions: 80 },
+];
+
+/**
+ * PUT /api/results/:year — aynı yılın sonucu varsa üzerine yazılır.
+ * Zorunlu olan yalnızca yerleştirme puanı ve sırasıdır (en az bir puan türünde, ikisi birlikte);
+ * ham puan, ek puanlı değerler, OBP, diploma notu ve netler isteğe bağlıdır.
+ */
 export const saveYksResultSchema = z.object({
   source: z.enum(RESULT_SOURCES),
   diplomaGrade: z.number().min(0).max(100).nullable(),
@@ -56,7 +84,13 @@ export const saveYksResultSchema = z.object({
   scores: z
     .array(yksScoreSchema)
     .max(RESULT_SCORE_TYPES.length)
-    .refine((list) => new Set(list.map((s) => s.type)).size === list.length, { error: "Bir puan türü iki kez girilemez." }),
+    .refine((list) => new Set(list.map((s) => s.type)).size === list.length, { error: "Bir puan türü iki kez girilemez." })
+    .refine((list) => list.every((s) => (s.placementScore === null) === (s.placementRank === null)), {
+      error: "Yerleştirme puanı ve başarı sırası birlikte girilmeli.",
+    })
+    .refine((list) => list.some((s) => s.placementScore !== null), {
+      error: "En az bir puan türünün yerleştirme puanını ve sırasını gir.",
+    }),
   tests: z.array(yksTestSchema).max(30),
 });
 

@@ -3,6 +3,8 @@ import {
   formatNet,
   formatRank,
   formatScore,
+  placementCode,
+  RESULT_SCORE_CODES,
   RESULT_SCORE_LABELS,
   RESULT_SESSIONS,
   type YksScore,
@@ -54,7 +56,12 @@ export function ResultSummary({ result }: { result: ResultData }) {
           <tbody className="tabular-nums">
             {result.scores.map((s) => (
               <tr key={s.type} className="border-b border-border last:border-0">
-                <td className="px-5 py-3 font-medium">{RESULT_SCORE_LABELS[s.type]}</td>
+                <td className="px-5 py-3 font-medium">
+                  {RESULT_SCORE_LABELS[s.type]}{" "}
+                  <span className="whitespace-nowrap font-normal text-text-muted">
+                    ({RESULT_SCORE_CODES[s.type]} / {placementCode(s.type)})
+                  </span>
+                </td>
                 <td className="px-3 py-3 text-right text-text-muted">{show(s.score, formatScore)}</td>
                 <td className="px-3 py-3 text-right text-text-muted">{show(s.rank, formatRank)}</td>
                 <td className="px-3 py-3 text-right font-semibold">{show(s.placementScore, formatScore)}</td>

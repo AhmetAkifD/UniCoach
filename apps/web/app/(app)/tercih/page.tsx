@@ -1,15 +1,13 @@
 import { Info } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { DeleteResultButton } from "@/components/tercih/delete-result-button";
-import { ResultImport } from "@/components/tercih/result-import";
-import { ResultSummary } from "@/components/tercih/result-summary";
-import { formatDate } from "@/lib/exam-format";
+import { AddResult } from "@/components/tercih/add-result";
+import { SavedResult } from "@/components/tercih/saved-result";
 import { authedApi, requireUser } from "@/lib/session";
 
 export const metadata = { title: "YKS Tercih" };
 
 export default async function TercihPage() {
   const [user, results] = await Promise.all([requireUser(), authedApi().then((api) => api.results.list())]);
+  const years = results.map((r) => r.year);
 
   return (
     <div className="flex flex-col gap-8">
@@ -28,27 +26,10 @@ export default async function TercihPage() {
       )}
 
       {results.map((r) => (
-        <section key={r.id} className="flex flex-col gap-4" aria-labelledby={`result-${r.year}`}>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <h2 id={`result-${r.year}`} className="text-xl font-semibold tracking-tight">
-                {r.year} YKS sonucun
-              </h2>
-              <Badge tone={r.source === "document" ? "success" : "neutral"}>
-                {r.source === "document" ? "Belgeden okundu" : "Elle girildi"}
-              </Badge>
-              <span className="text-xs text-text-muted">Güncellendi: {formatDate(r.updatedAt)}</span>
-            </div>
-            <DeleteResultButton year={r.year} />
-          </div>
-          <ResultSummary result={r} />
-        </section>
+        <SavedResult key={r.id} result={r} savedYears={years} />
       ))}
 
-      <ResultImport
-        savedYears={results.map((r) => r.year)}
-        accountName={`${user.firstName} ${user.lastName}`}
-      />
+      <AddResult savedYears={years} accountName={`${user.firstName} ${user.lastName}`} />
     </div>
   );
 }
