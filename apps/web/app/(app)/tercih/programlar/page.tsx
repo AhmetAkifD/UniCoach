@@ -29,6 +29,7 @@ export default async function ProgramsPage() {
       <ProgramExplorer
         initialOptions={options}
         ranks={ranks}
+        scores={(latest?.scores ?? []).filter((s) => s.placementScore !== null && s.placementRank !== null)}
         resultYear={latest?.year ?? null}
         isAdmin={user.role === "ADMIN"}
       />

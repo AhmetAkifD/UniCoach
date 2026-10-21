@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import Link from "next/link";
 import { ChevronLeft, ChevronRight, CircleAlert, Loader2, RefreshCw, RotateCcw } from "lucide-react";
 import {
   ApiError,
@@ -9,6 +10,7 @@ import {
   formatScore,
   PROGRAM_LEVEL_LABELS,
   PROGRAM_LEVELS,
+  placementCode,
   RESULT_SCORE_CODES,
   RESULT_SCORE_LABELS,
   RESULT_SCORE_TYPES,
@@ -21,6 +23,7 @@ import {
   type ProgramSource,
   type ProgramSummary,
   type ResultScoreType,
+  type YksScore,
 } from "@unicoach/shared";
 import { Badge, type BadgeTone } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -116,12 +119,15 @@ function RankInput({ label, value, onChange }: { label: string; value: number | 
 export function ProgramExplorer({
   initialOptions,
   ranks,
+  scores,
   resultYear,
   isAdmin,
 }: {
   initialOptions: ProgramFilterOptions;
   /** Öğrencinin puan türü başına yerleştirme sırası (son sonucundan) */
   ranks: Partial<Record<ResultScoreType, number>>;
+  /** Son sonucun puanları (yerleştirme puanı olanlar) */
+  scores: YksScore[];
   resultYear: number | null;
   isAdmin: boolean;
 }) {
@@ -317,6 +323,58 @@ export function ProgramExplorer({
           <p className="text-xs text-text-subtle">Bu puan türünde kayıtlı yerleştirme sıran yok; karşılaştırma gösterilmez.</p>
         ) : null}
       </Card>
+
+      <section className="flex flex-col gap-3" aria-labelledby="my-scores-title">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 id="my-scores-title" className="text-xl font-semibold tracking-tight">
+            Puanların ve sıraların
+          </h2>
+          {resultYear && (
+            <Link href="/tercih" className="text-sm font-medium text-primary hover:underline">
+              {resultYear} YKS sonucun · düzenle
+            </Link>
+          )}
+        </div>
+        {scores.length ? (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            {scores.map((s) => {
+              const active = filters.scoreType === s.type;
+              return (
+                <button
+                  key={s.type}
+                  type="button"
+                  aria-pressed={active}
+                  title="Bu puan türüne göre süz"
+                  onClick={() => {
+                    setFilters((f) => ({ ...f, scoreType: s.type, groupIds: [] }));
+                    setPage(0);
+                  }}
+                  className={cn(
+                    "flex flex-col gap-1 rounded-lg border bg-surface p-4 text-left shadow-card transition-colors duration-fast",
+                    active ? "border-primary ring-1 ring-primary" : "border-border hover:border-border-strong",
+                  )}
+                >
+                  <span className="text-sm font-medium text-text-muted">
+                    {RESULT_SCORE_LABELS[s.type]} <span className="font-normal">({placementCode(s.type)})</span>
+                  </span>
+                  <span className="text-2xl font-bold tabular-nums tracking-tight">{formatScore(s.placementScore!)}</span>
+                  <span className="text-sm tabular-nums">
+                    <span className="text-text-muted">Sıra </span>
+                    <span className="font-semibold">{formatRank(s.placementRank!)}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <Card className="flex flex-col items-start gap-2 text-sm text-text-muted sm:flex-row sm:items-center sm:justify-between">
+            Puanını eklersen programlar senin sıranla karşılaştırılır.
+            <Link href="/tercih" className="font-medium text-primary hover:underline">
+              Sonucunu ekle
+            </Link>
+          </Card>
+        )}
+      </section>
 
       {error && (
         <div role="alert" className="flex items-start gap-2 rounded-md bg-danger-soft px-3.5 py-3 text-sm text-danger">
