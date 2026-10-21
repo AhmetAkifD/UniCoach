@@ -12,6 +12,7 @@ import {
   Info,
   KeyRound,
   Loader2,
+  Pause,
   ScanSearch,
   SplitSquareVertical,
   Trash2,
@@ -35,6 +36,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { useDialog } from "@/components/ui/use-dialog";
 import { browserApi } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { openPdf, pageText, type PDFDocumentProxy } from "@/lib/pdf";
@@ -86,16 +88,29 @@ function orderKey(q: Rect & { page: number }, pageWidth: number) {
   return q.page * 1e7 + col * 1e6 + q.y;
 }
 
-export function QuestionEditor({ book, initial }: { book: BookSummary; initial: BookQuestion[] }) {
+export function QuestionEditor({
+  book,
+  initial,
+  focusId,
+  examId,
+}: {
+  book: BookSummary;
+  initial: BookQuestion[];
+  /** Sınavdan "kaynağında düzenle" ile gelindiyse açılıp seçilecek soru */
+  focusId?: string;
+  /** Sınavdan gelindiyse o sınav (süresi durdurulmuştur); dönüşte devam ettirilir. */
+  examId?: string;
+}) {
+  const focus = initial.find((q) => q.id === focusId);
   const router = useRouter();
   const defaultChoiceCount = findSubject(book.subject)?.track === "LGS" ? 4 : 5;
   const [doc, setDoc] = useState<PDFDocumentProxy | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [attempt, setAttempt] = useState(0);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(focus?.page ?? 1);
   const [questions, setQuestions] = useState<Q[]>(() => initial.map(({ id, ...q }) => ({ ...q, key: id })));
   const [dirty, setDirty] = useState(false);
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(focus?.id ?? null);
   const [busy, setBusy] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
@@ -113,6 +128,8 @@ export function QuestionEditor({ book, initial }: { book: BookSummary; initial: 
   /** Numarası girilmeyi bekleyen yeni kutu */
   const [askNumber, setAskNumber] = useState<string | null>(null);
   const cancelRef = useRef(false);
+  const leavingRef = useRef(false);
+  const { confirm, prompt, alert, dialog } = useDialog();
   const pageWidths = useRef(new Map<number, number>());
   const pageCount = doc?.numPages ?? book.pageCount ?? 0;
 
@@ -139,7 +156,9 @@ export function QuestionEditor({ book, initial }: { book: BookSummary; initial: 
   // Kaydedilmemiş değişiklik varken sayfadan çıkılırsa uyar.
   useEffect(() => {
     if (!dirty) return;
-    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    const warn = (e: BeforeUnloadEvent) => {
+      if (!leavingRef.current) e.preventDefault();
+    };
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
@@ -206,7 +225,15 @@ export function QuestionEditor({ book, initial }: { book: BookSummary; initial: 
 
   async function detectThisPage() {
     if (!doc) return;
-    if (onPage.length && !window.confirm(`Bu sayfadaki ${onPage.length} soru silinip yeniden bulunsun mu?`)) return;
+    if (
+      onPage.length &&
+      !(await confirm({
+        title: "Bu sayfayı yeniden tara",
+        message: `Bu sayfadaki ${onPage.length} soru silinip yeniden bulunsun mu?`,
+        confirmLabel: "Yeniden bul",
+      }))
+    )
+      return;
     setNotice(null);
     setBusy(`${page}. sayfa okunuyor…`);
     try {
@@ -271,7 +298,15 @@ export function QuestionEditor({ book, initial }: { book: BookSummary; initial: 
 
   async function detectAll() {
     if (!doc) return;
-    if (questions.length && !window.confirm(`Mevcut ${questions.length} soru silinip tüm PDF yeniden taransın mı?`)) return;
+    if (
+      questions.length &&
+      !(await confirm({
+        title: "Tüm PDF'i yeniden tara",
+        message: `Mevcut ${questions.length} soru silinip tüm PDF yeniden taransın mı?`,
+        confirmLabel: "Yeniden tara",
+      }))
+    )
+      return;
     setNotice(null);
     cancelRef.current = false;
     const pages: PageText[] = [];
@@ -314,13 +349,15 @@ export function QuestionEditor({ book, initial }: { book: BookSummary; initial: 
     }
   }
 
-  async function save() {
-    if (duplicates.size) return;
+  /** Kaydeder; başarılıysa true. */
+  async function save(): Promise<boolean> {
+    if (duplicates.size) return false;
     setSaving(true);
     setNotice(null);
     try {
       const saved = await browserApi.books.saveQuestions(book.id, {
-        questions: sorted.map(({ key: _key, ...q }) => ({ ...q, choices: [] })),
+        // Kayıtlı soruların kimliği gönderilir; sınavlardaki bağlantılar kopmaz.
+        questions: sorted.map(({ key, ...q }) => ({ ...q, id: key.startsWith("yeni-") ? undefined : key, choices: [] })),
       });
       setQuestions(saved.map(({ id, ...q }) => ({ ...q, key: id })));
       setSelected((s) => {
@@ -330,11 +367,31 @@ export function QuestionEditor({ book, initial }: { book: BookSummary; initial: 
       setDirty(false);
       setNotice({ tone: "success", text: `${saved.length} soru kaydedildi.` });
       router.refresh();
+      return true;
     } catch (err) {
       setNotice({ tone: "danger", text: err instanceof ApiError ? (err.errors?.questions ?? err.message) : "Kaydedilemedi." });
+      return false;
     } finally {
       setSaving(false);
     }
+  }
+
+  /** Sınava dön: değişiklik varsa önce kaydedilir; sınav devam ettirilir ve düzeltme sınava yansır. */
+  async function backToExam(saveFirst: boolean) {
+    if (saveFirst && dirty && !(await save())) return;
+    if (!saveFirst && dirty) {
+      const discard = await confirm({
+        title: "Kaydetmeden dön",
+        message: "Kaydedilmemiş değişiklikler kaybolacak. Sınava dönülsün mü?",
+        confirmLabel: "Dön",
+        danger: true,
+      });
+      if (!discard) return;
+      setDirty(false);
+    }
+    // Kaydedildi ya da vazgeçildi: çıkış uyarısı gösterilmez.
+    leavingRef.current = true;
+    window.location.assign(`/sinavlar/${examId}?devam=1`);
   }
 
   // --- Sayfayı çiz ---
@@ -473,7 +530,7 @@ export function QuestionEditor({ book, initial }: { book: BookSummary; initial: 
   // Kısayollar: A–E seçili sorunun cevabı, ← → sayfa, Delete seçili kutuyu siler, Esc seçimi bırakır.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (isTyping(e.target) || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (isTyping(e.target) || e.ctrlKey || e.metaKey || e.altKey || document.querySelector("dialog[open]")) return;
       const index = CHOICE_LETTERS.indexOf(e.key.toUpperCase() as ChoiceLetter);
       const q = questions.find((x) => x.key === selected);
       if (q && index >= 0) {
@@ -499,16 +556,22 @@ export function QuestionEditor({ book, initial }: { book: BookSummary; initial: 
    * Seçili sorudan başlayarak aynı testteki sonraki soruları yeni bir teste taşır ve 1'den numaralar.
    * OCR'ın kaçırdığı "test yeniden 1'den başlıyor" durumunu tek tıkla düzeltmek için.
    */
-  function splitFrom(key: string) {
+  async function splitFrom(key: string) {
     const index = sorted.findIndex((q) => q.key === key);
     const from = sorted[index];
     if (!from) return;
     let suggestion = sections.length + 1;
     while (sections.includes(`Test ${suggestion}`)) suggestion++;
-    const name = window.prompt("Yeni testin adı", `Test ${suggestion}`)?.trim();
+    const name = await prompt({
+      title: "Buradan yeni test başlat",
+      message: "Bu soru ve testteki sonrakiler yeni teste taşınır, 1'den numaralanır.",
+      defaultValue: `Test ${suggestion}`,
+      placeholder: "Yeni testin adı",
+      confirmLabel: "Başlat",
+    });
     if (!name) return;
     if (sections.some((s) => s !== from.section && s.toLocaleLowerCase("tr-TR") === name.toLocaleLowerCase("tr-TR"))) {
-      window.alert(`"${name}" adında bir test zaten var; başka bir ad seç.`);
+      await alert({ title: "Bu ad kullanılıyor", message: `"${name}" adında bir test zaten var; başka bir ad seç.` });
       return;
     }
     const moved = sorted.slice(index).filter((q) => q.section === from.section);
@@ -521,6 +584,23 @@ export function QuestionEditor({ book, initial }: { book: BookSummary; initial: 
 
   return (
     <div className="flex flex-col gap-6">
+      {dialog}
+      {examId && (
+        <div className="flex flex-col gap-3 rounded-lg border border-warning/40 bg-warning-soft px-4 py-3 text-warning sm:flex-row sm:items-center">
+          <span className="flex flex-1 items-start gap-2 text-sm">
+            <Pause className="mt-0.5 size-4 shrink-0" aria-hidden />
+            Sınavın duraklatıldı. Soruyu düzeltip sınava dönünce süre kaldığı yerden devam eder ve düzeltme sınava yansır.
+          </span>
+          <div className="flex shrink-0 gap-2">
+            <Button size="sm" variant="ghost" onClick={() => void backToExam(false)} disabled={saving}>
+              Sınava dön
+            </Button>
+            <Button size="sm" onClick={() => void backToExam(true)} loading={saving} disabled={duplicates.size > 0}>
+              {dirty ? "Kaydet ve sınava dön" : "Sınava dön ve devam et"}
+            </Button>
+          </div>
+        </div>
+      )}
       <Link
         href={`/soru-bankasi/${book.id}`}
         className="inline-flex items-center gap-1.5 self-start text-sm font-medium text-text-muted hover:text-text"
@@ -686,7 +766,7 @@ export function QuestionEditor({ book, initial }: { book: BookSummary; initial: 
               duplicate={duplicates.has(current.key)}
               onChange={(value) => patch(current.key, value)}
               onDelete={removeSelected}
-              onSplit={() => splitFrom(current.key)}
+              onSplit={() => void splitFrom(current.key)}
               askNumber={askNumber === current.key}
               onNumberDone={() => setAskNumber(null)}
               onClose={() => setSelected(null)}

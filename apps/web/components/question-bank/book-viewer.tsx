@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
   CircleAlert,
+  ClipboardList,
   Download,
   File,
   GalleryVertical,
@@ -28,6 +29,7 @@ import { SubjectSelect } from "@/components/library/subject-select";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { useDialog } from "@/components/ui/use-dialog";
 import { browserApi } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { openPdf, type PDFDocumentProxy } from "@/lib/pdf";
@@ -632,6 +634,7 @@ function BookHeader({
   const [topic, setTopic] = useState(book.topic ?? "");
   const [error, setError] = useState<string>();
   const [pending, startTransition] = useTransition();
+  const { confirm, dialog } = useDialog();
 
   function run(action: () => Promise<BookSummary | void>, after: (book?: BookSummary) => void) {
     setError(undefined);
@@ -648,6 +651,7 @@ function BookHeader({
 
   return (
     <header className="flex flex-col gap-4">
+      {dialog}
       {editing ? (
         <form
           className="flex flex-col gap-2 sm:flex-row sm:items-start"
@@ -716,6 +720,14 @@ function BookHeader({
           <ListChecks className="size-4" aria-hidden />
           {book.questionCount ? `${book.questionCount} soru çıkarıldı` : "Soruları çıkar"}
         </Link>
+        {book.questionCount > 0 && (
+          <Link
+            href={`/sinavlar/yeni?pdf=${book.id}`}
+            className="inline-flex items-center gap-1.5 font-medium text-primary hover:underline"
+          >
+            <ClipboardList className="size-4" aria-hidden /> Sınav oluştur
+          </Link>
+        )}
       </div>
 
       <details className="group text-sm">
@@ -770,8 +782,12 @@ function BookHeader({
               variant="danger"
               disabled={pending}
               onClick={() => {
-                if (!window.confirm("Bu PDF soru bankandan silinsin mi?")) return;
-                run(() => browserApi.books.remove(book.id), onDeleted);
+                void confirm({
+                  title: "PDF'i sil",
+                  message: "Bu PDF, çıkarılan soruları ve bu PDF'ten çözdüğün sınavlar silinsin mi?",
+                  confirmLabel: "Sil",
+                  danger: true,
+                }).then((ok) => ok && run(() => browserApi.books.remove(book.id), onDeleted));
               }}
             >
               <Trash2 className="size-4" aria-hidden /> PDF'i sil

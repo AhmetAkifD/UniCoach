@@ -33,6 +33,7 @@ model User {
   updatedAt    DateTime   @updatedAt
   sources      Source[]
   books        QuestionBook[]
+  exams        Exam[]
 }
 
 enum SourceKind {
@@ -110,6 +111,7 @@ model QuestionBook {
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
   questions  BookQuestion[]
+  exams      Exam[]
 
   @@index([userId, subject])
 }
@@ -134,7 +136,64 @@ model BookQuestion {
   choices     String[]
   /// Kaydedilme sırası (PDF'teki sıra)
   position    Int
+  examQuestions ExamQuestion[]
 
-  @@unique([bookId, section, number])
+  /// Bir testte aynı numara olmaz; kural API'de (zod) denetlenir. Kayıtta kimlikler korunduğu için
+  /// numaraların yer değiştirmesi ara adımda çakışmasın diye veritabanında tekil kısıt yoktur.
+  @@index([bookId, section, number])
   @@index([bookId, position])
+}
+
+/// Geçmiş Sınavlar: Soru Bankası'ndan seçilen testlerle kurulan süreli deneme.
+model Exam {
+  id          String         @id @default(cuid())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookId      String
+  book        QuestionBook   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  /// Seçilen testlerin adları
+  title       String
+  /// Net kuralı: YKS'de 4, LGS'de 3 yanlış bir doğruyu götürür.
+  track       ExamTrack
+  /// Boşsa süresiz
+  durationSec Int?
+  /// Sonradan eklenen süre (saniye)
+  extraSec    Int            @default(0)
+  /// Duraklatıldıysa duraklatma anı; süre işlemez
+  pausedAt    DateTime?
+  /// Önceki duraklatmaların toplamı (ms); bitiş anı bu kadar ötelenir
+  pausedMs    Int            @default(0)
+  startedAt   DateTime       @default(now())
+  finishedAt  DateTime?
+  correct     Int?
+  wrong       Int?
+  blank       Int?
+  net         Float?
+  questions   ExamQuestion[]
+
+  @@index([userId, startedAt])
+}
+
+/// Sınavdaki soru: kaynak sorunun o anki kopyası (yer + doğru cevap) ve öğrencinin cevabı.
+model ExamQuestion {
+  id             String        @id @default(cuid())
+  examId         String
+  exam           Exam          @relation(fields: [examId], references: [id], onDelete: Cascade)
+  position       Int
+  /// Kaynağa dönüp düzeltmek için; kaynak silinirse boşalır.
+  bookQuestionId String?
+  bookQuestion   BookQuestion? @relation(fields: [bookQuestionId], references: [id], onDelete: SetNull)
+  section        String
+  number         Int
+  page           Int
+  x              Float
+  y              Float
+  w              Float
+  h              Float
+  choiceCount    Int
+  correctAnswer  String
+  answer         String?
+  answeredAt     DateTime?
+
+  @@unique([examId, position])
 }

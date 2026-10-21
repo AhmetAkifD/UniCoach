@@ -120,6 +120,8 @@ export type ChoiceLetter = (typeof CHOICE_LETTERS)[number];
 export const BOOK_QUESTIONS_MAX = 3000;
 
 export const bookQuestionSchema = z.object({
+  /** Kayıtlı sorunun kimliği; yeni soruda yok. Kimlik korunur ki sınavlardaki bağlantılar kopmasın. */
+  id: z.string().min(1).optional(),
   /** Test/bölüm adı, ör. "Temel Matematik Testi" ya da "Test 3"; numaralar bölüm içinde tekildir. */
   section: z.string().trim().min(1, { error: "Test adı boş olamaz." }).max(60, { error: "Test adı en fazla 60 karakter olabilir." }),
   number: z.number().int().min(1).max(999),
@@ -151,6 +153,6 @@ export const saveBookQuestionsSchema = z
 export type BookQuestionInput = z.infer<typeof bookQuestionSchema>;
 export type SaveBookQuestionsInput = z.infer<typeof saveBookQuestionsSchema>;
 
-export interface BookQuestion extends BookQuestionInput {
+export interface BookQuestion extends Omit<BookQuestionInput, "id"> {
   id: string;
 }

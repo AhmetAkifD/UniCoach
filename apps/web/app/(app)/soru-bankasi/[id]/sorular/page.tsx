@@ -5,8 +5,14 @@ import { authedApi } from "@/lib/session";
 
 export const metadata = { title: "Soruları çıkar" };
 
-export default async function QuestionsPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default async function QuestionsPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ soru?: string; sinav?: string }>;
+}) {
+  const [{ id }, { soru, sinav }] = await Promise.all([params, searchParams]);
   const api = await authedApi();
   let book: BookSummary;
   let questions: BookQuestion[];
@@ -16,5 +22,5 @@ export default async function QuestionsPage({ params }: { params: Promise<{ id: 
     if (err instanceof ApiError && err.status === 404) notFound();
     throw err;
   }
-  return <QuestionEditor book={book} initial={questions} />;
+  return <QuestionEditor book={book} initial={questions} focusId={soru} examId={sinav} />;
 }
