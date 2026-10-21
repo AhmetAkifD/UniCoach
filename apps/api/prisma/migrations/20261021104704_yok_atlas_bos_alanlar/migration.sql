@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "Program" ALTER COLUMN "cityCode" DROP NOT NULL,
+ALTER COLUMN "cityName" DROP NOT NULL,
+ALTER COLUMN "groupId" DROP NOT NULL;
