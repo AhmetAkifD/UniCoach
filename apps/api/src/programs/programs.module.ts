@@ -7,5 +7,6 @@ import { ProgramsService } from "./programs.service";
   imports: [AuthModule],
   controllers: [ProgramsController],
   providers: [ProgramsService],
+  exports: [ProgramsService],
 })
 export class ProgramsModule {}

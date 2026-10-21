@@ -7,3 +7,4 @@ export * from "./question-bank";
 export * from "./exam-session";
 export * from "./yks-result";
 export * from "./programs";
+export * from "./preferences";

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Info, Search } from "lucide-react";
+import { Info, ListOrdered, Search } from "lucide-react";
 import { buttonClasses } from "@/components/ui/button";
 import { AddResult } from "@/components/tercih/add-result";
 import { SavedResult } from "@/components/tercih/saved-result";
@@ -20,9 +20,14 @@ export default async function TercihPage() {
             Önce sınav sonucunu ekle. Tercih yaparken puanların ve başarı sıraların buradan kullanılacak.
           </p>
         </div>
-        <Link href="/tercih/programlar" className={buttonClasses({ variant: results.length ? "primary" : "secondary" })}>
-          <Search className="size-5" aria-hidden /> Programları keşfet
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <Link href="/tercih/liste" className={buttonClasses({ variant: "secondary" })}>
+            <ListOrdered className="size-5" aria-hidden /> Tercih listem
+          </Link>
+          <Link href="/tercih/programlar" className={buttonClasses({ variant: results.length ? "primary" : "secondary" })}>
+            <Search className="size-5" aria-hidden /> Programları keşfet
+          </Link>
+        </div>
       </section>
 
       {user.examTrack === "LGS" && (

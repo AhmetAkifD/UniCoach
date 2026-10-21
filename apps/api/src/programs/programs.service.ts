@@ -167,6 +167,15 @@ export class ProgramsService implements OnApplicationBootstrap {
     };
   }
 
+  /** Tek program: önce indirilmiş veride, yoksa canlı YÖK Atlas'ta. */
+  async findByCode(code: number): Promise<ProgramSummary | null> {
+    const row = await this.prisma.program.findUnique({ where: { code } });
+    if (row) return toSummary(row);
+    const [res, announced] = await Promise.all([atlasSearch({ code, page: 0, size: 1 }), atlasResultsAnnounced()]);
+    const found = res.content.find((r) => r.kilavuzKodu === code);
+    return found ? toProgram(found, announced) : null;
+  }
+
   async search(input: ProgramSearchInput): Promise<ProgramPage> {
     if (input.source === "live") {
       const [res, announced] = await Promise.all([atlasSearch(input), atlasResultsAnnounced()]);
@@ -208,7 +217,7 @@ export class ProgramsService implements OnApplicationBootstrap {
   }
 }
 
-function toSummary(row: ProgramRow): ProgramSummary {
+export function toSummary(row: ProgramRow): ProgramSummary {
   return {
     code: row.code,
     year: row.year,

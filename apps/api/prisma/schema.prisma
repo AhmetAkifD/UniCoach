@@ -35,6 +35,7 @@ model User {
   books        QuestionBook[]
   exams        Exam[]
   yksResults   YksResult[]
+  preferences  Preference[]
 }
 
 enum SourceKind {
@@ -276,4 +277,21 @@ model ProgramSync {
   year       Int
   count      Int
   finishedAt DateTime @default(now())
+}
+
+/// YKS Tercih listesi: öğrencinin seçtiği programlar, öncelik sırasıyla (en fazla 24).
+model Preference {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// ÖSYM program kodu; indirilmiş veride olmayabilir (canlı aramadan eklenmiş olabilir)
+  programCode Int
+  /// 1'den başlar
+  position    Int
+  /// Eklendiği andaki program (packages/shared → ProgramSummary); indirilmiş veride yoksa bu gösterilir
+  snapshot    Json
+  addedAt     DateTime @default(now())
+
+  @@unique([userId, programCode])
+  @@index([userId, position])
 }

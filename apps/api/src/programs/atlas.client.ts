@@ -79,7 +79,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 /** Sitenin filtre gövdesi; boş filtre tüm programları getirir. */
-export function atlasSearch(input: Partial<ProgramSearchInput> & { page: number; size: number }) {
+export function atlasSearch(input: Partial<ProgramSearchInput> & { page: number; size: number; code?: number }) {
   return request<AtlasPage>("/tercih-kilavuz/search", {
     method: "POST",
     body: JSON.stringify({
@@ -92,7 +92,7 @@ export function atlasSearch(input: Partial<ProgramSearchInput> & { page: number;
         universiteTuru: input.universityType ? UNIVERSITY_TYPE_TEXT[input.universityType] : null,
         bursOraniId: input.scholarshipId ?? null,
         ogrenimTuruId: input.educationTypeId ?? null,
-        kilavuzKodu: null,
+        kilavuzKodu: input.code ?? null,
         minBasariSirasi: input.minRank ?? null,
         maxBasariSirasi: input.maxRank ?? null,
       },

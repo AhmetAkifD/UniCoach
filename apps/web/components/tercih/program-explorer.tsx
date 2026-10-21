@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, CircleAlert, Loader2, RefreshCw, RotateCcw } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, CircleAlert, ListPlus, Loader2, RefreshCw, RotateCcw } from "lucide-react";
 import {
   ApiError,
   EDUCATION_TYPES,
@@ -10,6 +10,9 @@ import {
   formatScore,
   PROGRAM_LEVEL_LABELS,
   PROGRAM_LEVELS,
+  PREFERENCE_MAX,
+  comparisonYear,
+  rankComparison,
   placementCode,
   RESULT_SCORE_CODES,
   RESULT_SCORE_LABELS,
@@ -21,11 +24,10 @@ import {
   type ProgramPage,
   type ProgramSearchInput,
   type ProgramSource,
-  type ProgramSummary,
   type ResultScoreType,
   type YksScore,
 } from "@unicoach/shared";
-import { Badge, type BadgeTone } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { MultiSelect } from "@/components/ui/multi-select";
@@ -33,6 +35,7 @@ import { SegmentedControl } from "@/components/ui/segmented-control";
 import { browserApi } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { formatDate } from "@/lib/exam-format";
+import { ProgramYears } from "./program-years";
 
 const PAGE_SIZE = 25;
 
@@ -50,17 +53,6 @@ const EMPTY: Filters = {
   minRank: null,
   maxRank: null,
 };
-
-/** Öğrencinin yerleştirme sırasını programın son taban sırasıyla karşılaştırır (geçen yılın verisine göre bir ipucu). */
-function compare(studentRank: number | undefined, p: ProgramSummary): { tone: BadgeTone; label: string } | null {
-  if (!studentRank) return null;
-  if (p.minRankRequired && studentRank > p.minRankRequired) return { tone: "danger", label: "Sıra şartını sağlamıyor" };
-  if (!p.rank) return null;
-  const ratio = studentRank / p.rank;
-  if (ratio <= 0.9) return { tone: "success", label: "Sıran yetiyor" };
-  if (ratio <= 1.1) return { tone: "warning", label: "Sınırda" };
-  return { tone: "danger", label: "Sıran gerisinde" };
-}
 
 function Select<T extends string | number>({
   label,
@@ -122,6 +114,7 @@ export function ProgramExplorer({
   scores,
   resultYear,
   isAdmin,
+  initialListCodes,
 }: {
   initialOptions: ProgramFilterOptions;
   /** Öğrencinin puan türü başına yerleştirme sırası (son sonucundan) */
@@ -130,6 +123,8 @@ export function ProgramExplorer({
   scores: YksScore[];
   resultYear: number | null;
   isAdmin: boolean;
+  /** Tercih listesindeki program kodları */
+  initialListCodes: number[];
 }) {
   const [options, setOptions] = useState(initialOptions);
   const [source, setSource] = useState<ProgramSource>(initialOptions.snapshot ? "local" : "live");
@@ -140,6 +135,22 @@ export function ProgramExplorer({
   const [error, setError] = useState<string | null>(null);
   const [loading, startLoading] = useTransition();
   const requestId = useRef(0);
+  const [listCodes, setListCodes] = useState(initialListCodes);
+  const [adding, setAdding] = useState<number | null>(null);
+
+  // Program, puana uymasa da eklenir; uyumsuzluk tercih listesinde uyarı olarak görünür.
+  async function addToList(code: number) {
+    setAdding(code);
+    setError(null);
+    try {
+      const list = await browserApi.preferences.add(code);
+      setListCodes(list.map((i) => i.program.code));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Program listene eklenemedi.");
+    } finally {
+      setAdding(null);
+    }
+  }
 
   const set = <K extends keyof Filters>(key: K, value: Filters[K]) => {
     setFilters((f) => ({ ...f, [key]: value }));
@@ -193,7 +204,6 @@ export function ProgramExplorer({
   );
   const myRank = filters.scoreType ? ranks[filters.scoreType] : undefined;
   const snapshot = options.snapshot;
-  const dataYear = result?.items[0]?.year ?? snapshot?.year ?? null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -315,9 +325,8 @@ export function ProgramExplorer({
         {myRank ? (
           <p className="text-xs text-text-subtle">
             {filters.scoreType && RESULT_SCORE_LABELS[filters.scoreType]} yerleştirme sıran {formatRank(myRank)}
-            {resultYear && dataYear && resultYear !== dataYear
-              ? ` (${resultYear} sonucun; programların sıraları ${dataYear} yılına ait, karşılaştırma yalnızca fikir verir).`
-              : ". Karşılaştırma programın son taban sırasına göredir; yeni yılda değişebilir."}
+            {resultYear ? ` (${resultYear} sonucun)` : ""}. Programlar, sonuç yılına en yakın yılın taban sırasıyla
+            karşılaştırılır; tabloda o yıl vurgulanır. Karşılaştırma yalnızca fikir verir.
           </p>
         ) : filters.scoreType ? (
           <p className="text-xs text-text-subtle">Bu puan türünde kayıtlı yerleştirme sıran yok; karşılaştırma gösterilmez.</p>
@@ -399,19 +408,22 @@ export function ProgramExplorer({
 
         {result && result.items.length > 0 && (
           <Card className={cn("overflow-x-auto p-0 transition-opacity", loading && "opacity-60")}>
-            <table className="w-full min-w-[46rem] text-sm">
+            <table className="w-full min-w-[54rem] text-sm">
               <thead className="text-left text-text-muted">
                 <tr className="border-b border-border">
                   <th className="px-5 py-3 font-medium">Program</th>
                   <th className="px-3 py-3 text-right font-medium">Kontenjan</th>
-                  <th className="px-3 py-3 text-right font-medium">Taban puan</th>
-                  <th className="px-3 py-3 text-right font-medium">Başarı sırası</th>
-                  <th className="px-5 py-3 text-right font-medium">Önceki yıllar (sıra)</th>
+                  <th className="px-3 py-3 text-right font-medium">Yıllara göre taban puan · başarı sırası</th>
+                  <th className="px-5 py-3">
+                    <span className="sr-only">Tercih listesi</span>
+                  </th>
                 </tr>
               </thead>
               <tbody className="tabular-nums">
                 {result.items.map((p) => {
-                  const cmp = compare(ranks[p.scoreType], p);
+                  const cmp = rankComparison(ranks[p.scoreType], p, resultYear);
+                  const refYear = ranks[p.scoreType] ? comparisonYear(p, resultYear)?.year ?? null : null;
+                  const inList = listCodes.includes(p.code);
                   return (
                     <tr key={p.code} className="border-b border-border align-top last:border-0">
                       <td className="px-5 py-3">
@@ -426,22 +438,30 @@ export function ProgramExplorer({
                           {cmp && (
                             <Badge tone={cmp.tone} className="self-start">
                               {cmp.label}
+                              {cmp.year && ` (${cmp.year})`}
                             </Badge>
                           )}
                         </div>
                       </td>
                       <td className="px-3 py-3 text-right">{p.quota ?? "–"}</td>
-                      <td className="px-3 py-3 text-right">{p.minScore ? formatScore(p.minScore) : "–"}</td>
-                      <td className="px-3 py-3 text-right font-semibold">
-                        {p.rank ? formatRank(p.rank) : "–"}
-                        <span className="block text-xs font-normal text-text-subtle">{p.year}</span>
+                      <td className="px-3 py-3">
+                        <div className="flex justify-end">
+                          <ProgramYears program={p} highlightYear={refYear} />
+                        </div>
                       </td>
-                      <td className="px-5 py-3 text-right text-text-muted">
-                        {p.history.map((h) => (
-                          <span key={h.year} className="block whitespace-nowrap text-xs">
-                            {h.year}: {h.rank ? formatRank(h.rank) : "–"}
-                          </span>
-                        ))}
+                      <td className="px-5 py-3 text-right">
+                        <Button
+                          variant={inList ? "ghost" : "secondary"}
+                          size="sm"
+                          disabled={inList || (listCodes.length >= PREFERENCE_MAX && !inList)}
+                          loading={adding === p.code}
+                          onClick={() => void addToList(p.code)}
+                          title={!inList && listCodes.length >= PREFERENCE_MAX ? `Listende en fazla ${PREFERENCE_MAX} program olabilir` : undefined}
+                          className="whitespace-nowrap"
+                        >
+                          {inList ? <Check className="size-4" aria-hidden /> : <ListPlus className="size-4" aria-hidden />}
+                          {inList ? "Listede" : "Listeme ekle"}
+                        </Button>
                       </td>
                     </tr>
                   );
