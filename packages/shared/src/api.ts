@@ -30,6 +30,7 @@ import type {
 } from "./question-bank";
 import type { CreateExamInput, ExamAnswerInput, ExamDetail, ExamQuestion, ExamSummary, ExtendExamInput } from "./exam-session";
 import type { SaveYksResultInput, YksResult } from "./yks-result";
+import type { ProgramFilterOptions, ProgramPage, ProgramSearchInput } from "./programs";
 
 export const USER_ROLES = ["STUDENT", "ADMIN"] as const;
 export type UserRole = (typeof USER_ROLES)[number];
@@ -153,6 +154,13 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       list: () => request<YksResult[]>("/results", { cache: "no-store" }),
       save: (year: number, input: SaveYksResultInput) => send<YksResult>("PUT", `/results/${year}`, input),
       remove: (year: number) => send<void>("DELETE", `/results/${year}`),
+    },
+    /** YKS Tercih: üniversite programları; `source` ile indirilmiş veri ya da canlı YÖK Atlas. */
+    programs: {
+      filters: () => request<ProgramFilterOptions>("/programs/filters", { cache: "no-store" }),
+      search: (input: ProgramSearchInput) => post<ProgramPage>("/programs/search", input),
+      /** Yalnızca admin; indirme arka planda sürer. */
+      sync: () => send<void>("POST", "/programs/sync"),
     },
   };
 }

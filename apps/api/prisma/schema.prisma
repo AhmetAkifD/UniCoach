@@ -218,3 +218,62 @@ model YksResult {
 
   @@unique([userId, year])
 }
+
+/// YKS Tercih: YÖK Atlas tercih kılavuzundan indirilen program. Her indirmede tablo baştan yazılır.
+model Program {
+  /// ÖSYM program kodu (kılavuz kodu)
+  code            Int      @id
+  /// Taban puan ve sıranın yılı
+  year            Int
+  universityId    Int
+  universityName  String
+  /// DEVLET | VAKIF | KKTC | YURTDISI
+  universityType  String
+  /// Yurt dışı programlarda boş
+  cityCode        Int?
+  cityName        String?
+  faculty         String?
+  name            String
+  /// Yeni açılan bazı programlarda boş
+  groupId         Int?
+  groupName       String
+  /// LISANS | ONLISANS
+  level           String
+  /// TYT | SAY | SOZ | EA | DIL
+  scoreType       String
+  language        String?
+  educationTypeId Int?
+  educationType   String?
+  /// 0: devlet (ücretsiz)
+  scholarshipId   Int
+  scholarship     String?
+  durationYears   Int?
+  quota           Int?
+  minScore        Float?
+  rank            Int?
+  /// packages/shared → ProgramHistory[] (önceki üç yıl)
+  history         Json
+  minRankRequired Int?
+  fee             Int?
+  /// ProgramCondition kodları (kılavuzdaki koşul maddeleri)
+  conditions      Int[]
+
+  @@index([scoreType, rank])
+  @@index([universityId])
+  @@index([groupId])
+  @@index([cityCode])
+}
+
+/// Tercih kılavuzunun koşul maddeleri (programlarda yalnızca numarası tutulur).
+model ProgramCondition {
+  code Int    @id
+  text String
+}
+
+/// YÖK Atlas indirme kayıtları; en sonuncusu indirilmiş verinin durumudur.
+model ProgramSync {
+  id         Int      @id @default(autoincrement())
+  year       Int
+  count      Int
+  finishedAt DateTime @default(now())
+}

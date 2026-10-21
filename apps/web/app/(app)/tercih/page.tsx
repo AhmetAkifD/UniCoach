@@ -1,4 +1,6 @@
-import { Info } from "lucide-react";
+import Link from "next/link";
+import { Info, Search } from "lucide-react";
+import { buttonClasses } from "@/components/ui/button";
 import { AddResult } from "@/components/tercih/add-result";
 import { SavedResult } from "@/components/tercih/saved-result";
 import { authedApi, requireUser } from "@/lib/session";
@@ -11,11 +13,16 @@ export default async function TercihPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <section className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">YKS Tercih</h1>
-        <p className="text-text-muted">
-          Önce sınav sonucunu ekle. Tercih yaparken puanların ve başarı sıraların buradan kullanılacak.
-        </p>
+      <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">YKS Tercih</h1>
+          <p className="text-text-muted">
+            Önce sınav sonucunu ekle. Tercih yaparken puanların ve başarı sıraların buradan kullanılacak.
+          </p>
+        </div>
+        <Link href="/tercih/programlar" className={buttonClasses({ variant: results.length ? "primary" : "secondary" })}>
+          <Search className="size-5" aria-hidden /> Programları keşfet
+        </Link>
       </section>
 
       {user.examTrack === "LGS" && (
