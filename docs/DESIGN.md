@@ -120,7 +120,7 @@ Her bileşenin web (`apps/web/components/ui`) ve mobil (`apps/mobile/components/
 
 | | Web | Mobil |
 |---|---|---|
-| Gezinme | Üstte sabit header (64px): **logo ikonu = menü düğmesi** (üzerine gelince ikon üç çizgiye döner, tıklayınca modüller açılır menüde listelenir), "UniCoach" yazısı (ana sayfa), **arama çubuğu** (şimdilik pasif), sağda profil (fotoğraf ya da baş harfler, geniş ekranda ad) ve çıkış; tema düğmesi yok — tema profilden seçilir (giriş/kayıt ekranlarında hızlı tema düğmesi var) | Altta sekme çubuğu: **Ana Sayfa · Konular · Soru Bankası · Sınavlar · Tercih** |
+| Gezinme | Üstte sabit header (64px): **logo ikonu = menü düğmesi** (üzerine gelince ikon üç çizgiye döner, tıklayınca modüller açılır menüde listelenir), "UniCoach" yazısı (ana sayfa), **arama çubuğu** (şimdilik pasif), sağda profil (fotoğraf ya da baş harfler, geniş ekranda ad) ve çıkış; tema düğmesi yok — tema profilden seçilir (giriş/kayıt ekranlarında hızlı tema düğmesi var) | Altta sekme çubuğu: **Ana Sayfa · Konular · Soru Bankası · Sınavlar · Tercih** (etkin `primary`, diğerleri `textMuted`); üstte `surface` başlık çubuğu (ekran adı, ana sayfada "UniCoach"), sağda 34px profil fotoğrafı/baş harfler → Profil sekmelerin üstüne açılır (geri oku). Mobilde henüz olmayan modül sekmesi: ikon, `primary` "Mobilde yakında" rozeti, açıklama ve "web sitesinden kullanabilirsin" notu. Onay ve şifre pencereleri uygulama içi modal (Alert yerine). |
 | İçerik | Ortalanmış, en fazla 1200px. Izgara: 1 → 2 (md) → 3/4 (lg) sütun | Tek sütun, kenar boşluğu 16px |
 | Ana sayfa | Selamlama, ilerleme kartları ızgarası, "Soru Çöz" birincil butonu | Aynı içerik, dikey akış |
 | Sınav ekranı | Solda soru, sağda soru haritası ve süre | Soru tam ekran, alttan açılan soru haritası |

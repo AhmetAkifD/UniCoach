@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "UniCoach",
+    "slug": "unicoach",
+    "scheme": "unicoach",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.unicoach.app"
+    },
+    "android": {
+      "package": "com.unicoach.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#EEF2FF",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Profil fotoğrafı seçmek için fotoğraflarına erişmemize izin ver."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

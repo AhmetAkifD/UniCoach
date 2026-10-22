@@ -12,7 +12,8 @@ async function bootstrap() {
   // Tüm uç noktalar /api altında: web (Next.js rewrite) ve mobil aynı yolu kullanır.
   app.setGlobalPrefix("api");
   app.enableCors({
-    origin: (process.env.WEB_ORIGIN ?? "http://localhost:3000").split(","),
+    // Web sitesi ve Expo'nun web önizlemesi (8081). Telefondaki uygulama tarayıcı olmadığı için CORS'a takılmaz.
+    origin: (process.env.WEB_ORIGIN ?? "http://localhost:3000,http://localhost:8081").split(","),
     credentials: true,
   });
   app.enableShutdownHooks();

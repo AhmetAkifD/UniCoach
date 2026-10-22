@@ -1,0 +1,110 @@
+import { useCallback, useState } from "react";
+import { RefreshControl, ScrollView, View } from "react-native";
+import { useFocusEffect } from "expo-router";
+import { BookOpenCheck, TrendingUp } from "lucide-react-native";
+import { formatNet, type ExamSummary } from "@unicoach/shared";
+import { layout, radius, spacing } from "@unicoach/design";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Text } from "@/components/ui/text";
+import { api } from "@/lib/api";
+import { modules } from "@/lib/modules";
+import { useSession } from "@/lib/session";
+import { useTheme } from "@/lib/theme";
+
+/** Ana sayfa: selam, son deneme, konu ilerlemesi (henüz boş) ve modüller — web ana sayfasının mobil karşılığı. */
+export default function Home() {
+  const { user } = useSession();
+  const { colors } = useTheme();
+  const [lastExam, setLastExam] = useState<ExamSummary | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      setLastExam((await api.exams.list()).find((e) => e.finishedAt) ?? null);
+    } catch {
+      setLastExam(null);
+    }
+  }, []);
+
+  // Sekmeye her dönüşte (ör. web'de deneme çözüldükten sonra) yenilenir.
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [load]),
+  );
+
+  return (
+    <ScrollView
+      style={{ backgroundColor: colors.bg }}
+      contentContainerStyle={{ padding: layout.pageGutter.mobile, gap: spacing[6], paddingBottom: spacing[10] }}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          tintColor={colors.primary}
+          colors={[colors.primary]}
+          onRefresh={async () => {
+            setRefreshing(true);
+            await load();
+            setRefreshing(false);
+          }}
+        />
+      }
+    >
+      <View style={{ gap: spacing[2] }}>
+        <Text size="2xl" weight="semibold">
+          Merhaba {user?.firstName} 👋
+        </Text>
+        <Text tone="textMuted">Bugün hangi konuya çalışmak istersin? Küçük adımlar, büyük netler.</Text>
+      </View>
+
+      <Card style={{ gap: spacing[2] }}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          <Text size="sm" weight="medium" tone="textMuted">
+            Son deneme
+          </Text>
+          <TrendingUp size={20} color={colors.primary} />
+        </View>
+        <Text size="4xl" weight="bold">
+          {lastExam ? formatNet(lastExam.net ?? 0) : "—"}
+        </Text>
+        <Text size="sm" tone="textMuted">
+          {lastExam ? `${lastExam.title} · ${lastExam.correct} D, ${lastExam.wrong} Y` : "Henüz deneme çözmedin."}
+        </Text>
+      </Card>
+
+      <Card style={{ gap: spacing[3], alignItems: "center", paddingVertical: spacing[8] }}>
+        <BookOpenCheck size={32} color={colors.textSubtle} strokeWidth={1.75} />
+        <Text weight="semibold">Konu ilerlemen</Text>
+        <Text size="sm" tone="textMuted" style={{ textAlign: "center" }}>
+          Konu anlatımlarını izleyip soru çözdükçe ilerlemen burada görünecek.
+        </Text>
+      </Card>
+
+      <View style={{ gap: spacing[4] }}>
+        <Text size="xl" weight="semibold">
+          Modüller
+        </Text>
+        {modules.map((m) => {
+          const Icon = m.icon;
+          return (
+            <Card key={m.title} style={{ flexDirection: "row", gap: spacing[4], alignItems: "flex-start" }}>
+              <View style={{ width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.primarySoft, alignItems: "center", justifyContent: "center" }}>
+                <Icon size={20} color={colors.primarySoftText} strokeWidth={1.75} />
+              </View>
+              <View style={{ flex: 1, gap: 4 }}>
+                <Text size="lg" weight="semibold">
+                  {m.title}
+                </Text>
+                <Text size="sm" tone="textMuted">
+                  {m.description}
+                </Text>
+                {!m.ready && <Badge tone="primary">Mobilde yakında</Badge>}
+              </View>
+            </Card>
+          );
+        })}
+      </View>
+    </ScrollView>
+  );
+}
