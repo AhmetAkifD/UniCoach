@@ -4,14 +4,35 @@
     {
       "name": "api",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "-w", "@unicoach/api"],
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "-w",
+        "@unicoach/api"
+      ],
       "port": 4000
     },
     {
       "name": "web",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "-w", "@unicoach/web"],
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "-w",
+        "@unicoach/web"
+      ],
       "port": 3000
+    },
+    {
+      "name": "mobile-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "web",
+        "-w",
+        "@unicoach/mobile"
+      ],
+      "port": 8081
     }
   ]
 }

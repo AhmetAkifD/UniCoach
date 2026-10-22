@@ -16,7 +16,8 @@
     "dev": "npm run build:packages && concurrently -n api,web -c blue,magenta \"npm run dev -w @unicoach/api\" \"npm run dev -w @unicoach/web\"",
     "typecheck": "npm run build:packages && npm run typecheck --workspaces --if-present",
     "db:migrate": "npm run db:migrate -w @unicoach/api",
-    "db:generate": "npm run db:generate -w @unicoach/api"
+    "db:generate": "npm run db:generate -w @unicoach/api",
+    "mobile": "npm run build:packages && npm run start -w @unicoach/mobile"
   },
   "devDependencies": {
     "concurrently": "^10.0.6",
@@ -26,5 +27,9 @@
     "@prisma/client@6.19.3": true,
     "@prisma/engines@6.19.3": true,
     "prisma@6.19.3": true
+  },
+  "overrides": {
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
   }
 }
