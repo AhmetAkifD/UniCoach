@@ -24,3 +24,23 @@
     }
   }
 }
+
+/*
+ * Çalışma alanı genişletilmiş modu: site başlığı ekranın üstüne gizlenir, fare en üst kenara gelince
+ * yüzen bir şerit olarak iner (Workspace bileşeni html'e data-workspace-expanded / data-header-open koyar).
+ */
+html[data-workspace-expanded] {
+  overflow: hidden;
+}
+html[data-workspace-expanded] [data-site-header] {
+  position: fixed;
+  inset-inline: 0;
+  top: 0;
+  z-index: 60;
+  transform: translateY(-100%);
+  transition: transform 180ms ease;
+}
+html[data-workspace-expanded][data-header-open] [data-site-header] {
+  transform: none;
+  @apply shadow-raised;
+}

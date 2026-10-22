@@ -16,7 +16,7 @@ export function SiteHeader({ user }: { user: AuthUser }) {
   const fullName = `${user.firstName} ${user.lastName}`.trim();
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-surface/85 backdrop-blur">
+    <header data-site-header className="sticky top-0 z-30 border-b border-border bg-surface/85 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-[1200px] items-center gap-3 px-4 md:gap-6 md:px-8">
         <div className="flex items-center gap-2">
           <AppMenu />

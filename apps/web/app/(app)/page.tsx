@@ -84,7 +84,7 @@ export default async function HomePage() {
 
       <section className="flex flex-col gap-4">
         <h2 className="text-xl font-semibold tracking-tight">Modüller</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {modules.map((m) => {
             const Icon = m.icon;
             return (

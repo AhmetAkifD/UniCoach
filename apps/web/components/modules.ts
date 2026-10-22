@@ -1,4 +1,4 @@
-import { BookOpenText, ClipboardList, GraduationCap, PlaySquare, type LucideIcon } from "lucide-react";
+import { BookOpenText, ClipboardList, GraduationCap, NotebookPen, PlaySquare, type LucideIcon } from "lucide-react";
 
 export interface ModuleInfo {
   href: string;
@@ -10,7 +10,7 @@ export interface ModuleInfo {
   ready?: boolean;
 }
 
-/** Dört ana modül — ana sayfa kartları ve "yakında" sayfaları bu listeyi kullanır. */
+/** Ana modüller — ana sayfa kartları ve "yakında" sayfaları bu listeyi kullanır. */
 export const modules: ModuleInfo[] = [
   {
     href: "/konular",
@@ -25,6 +25,14 @@ export const modules: ModuleInfo[] = [
     title: "Soru Bankası",
     description: "Soru kitaplarının PDF'leri, derslerine ve konularına göre. Kaldığın sayfadan devam et.",
     icon: BookOpenText,
+    phase: 3,
+    ready: true,
+  },
+  {
+    href: "/calisma-alani",
+    title: "Çalışma Alanı",
+    description: "Videonu izlerken PDF'inden çalış, defterine kalemle ya da klavyeyle not al.",
+    icon: NotebookPen,
     phase: 3,
     ready: true,
   },

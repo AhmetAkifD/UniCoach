@@ -36,6 +36,7 @@ model User {
   exams        Exam[]
   yksResults   YksResult[]
   preferences  Preference[]
+  notebooks    Notebook[]
 }
 
 enum SourceKind {
@@ -294,4 +295,31 @@ model Preference {
 
   @@unique([userId, programCode])
   @@index([userId, position])
+}
+
+/// Çalışma alanı: öğrencinin not defteri. Yalnızca sahibine görünür.
+model Notebook {
+  id        String         @id @default(cuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  createdAt DateTime       @default(now())
+  /// Bir sayfası kaydedilince de güncellenir (listede son çalışılan defter üstte).
+  updatedAt DateTime       @updatedAt
+  pages     NotebookPage[]
+
+  @@index([userId, updatedAt])
+}
+
+/// Defter sayfası: kalem/marker çizgileri ve metin kutuları (packages/shared → NotePageContent).
+model NotebookPage {
+  id         String   @id @default(cuid())
+  notebookId String
+  notebook   Notebook @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+  /// 1'den başlar, boşluksuz
+  position   Int
+  content    Json
+  updatedAt  DateTime @updatedAt
+
+  @@index([notebookId, position])
 }

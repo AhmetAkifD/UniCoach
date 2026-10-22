@@ -32,6 +32,15 @@ import type { CreateExamInput, ExamAnswerInput, ExamDetail, ExamQuestion, ExamSu
 import type { SaveYksResultInput, YksResult } from "./yks-result";
 import type { ProgramFilterOptions, ProgramPage, ProgramSearchInput } from "./programs";
 import type { PreferenceItem } from "./preferences";
+import type {
+  AddNotePageInput,
+  NotebookDetail,
+  NotebookInput,
+  NotebookSummary,
+  NotePage,
+  NotePageRef,
+  SaveNotePageInput,
+} from "./notebooks";
 
 export const USER_ROLES = ["STUDENT", "ADMIN"] as const;
 export type UserRole = (typeof USER_ROLES)[number];
@@ -169,6 +178,24 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       add: (code: number) => post<PreferenceItem[]>("/preferences", { code }),
       reorder: (codes: number[]) => send<PreferenceItem[]>("PUT", "/preferences/order", { codes }),
       remove: (code: number) => send<PreferenceItem[]>("DELETE", `/preferences/${code}`),
+    },
+    /** Çalışma alanı: not defterleri ve sayfaları (sayfa içeriği tek tek okunur ve kaydedilir). */
+    notebooks: {
+      list: () => request<NotebookSummary[]>("/notebooks", { cache: "no-store" }),
+      get: (id: string) => request<NotebookDetail>(`/notebooks/${encodeURIComponent(id)}`, { cache: "no-store" }),
+      create: (input: NotebookInput) => post<NotebookDetail>("/notebooks", input),
+      update: (id: string, input: NotebookInput) => send<NotebookDetail>("PATCH", `/notebooks/${encodeURIComponent(id)}`, input),
+      remove: (id: string) => send<void>("DELETE", `/notebooks/${encodeURIComponent(id)}`),
+      page: (id: string, pageId: string) =>
+        request<NotePage>(`/notebooks/${encodeURIComponent(id)}/pages/${encodeURIComponent(pageId)}`, { cache: "no-store" }),
+      addPage: (id: string, input: AddNotePageInput) => post<NotebookDetail>(`/notebooks/${encodeURIComponent(id)}/pages`, input),
+      savePage: (id: string, pageId: string, input: SaveNotePageInput) =>
+        send<NotePageRef>("PUT", `/notebooks/${encodeURIComponent(id)}/pages/${encodeURIComponent(pageId)}`, input),
+      removePage: (id: string, pageId: string) =>
+        send<NotebookDetail>("DELETE", `/notebooks/${encodeURIComponent(id)}/pages/${encodeURIComponent(pageId)}`),
+      /** Sayfa kaydının adresi (sayfadan çıkarken keepalive ile göndermek için) */
+      pagePath: (id: string, pageId: string) =>
+        `${baseUrl}/api/notebooks/${encodeURIComponent(id)}/pages/${encodeURIComponent(pageId)}`,
     },
   };
 }
