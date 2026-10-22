@@ -1,4 +1,5 @@
 import { SiteHeader } from "@/components/site-header";
+import { ThemeSync } from "@/components/theme-toggle";
 import { requireUser } from "@/lib/session";
 
 // Oturum her istekte kontrol edilir.
@@ -9,6 +10,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const user = await requireUser();
   return (
     <>
+      <ThemeSync theme={user.theme} />
       <SiteHeader user={user} />
       {/* Çalışma alanı gibi geniş sayfalar (data-wide) daha geniş alan kullanır. */}
       <main className="mx-auto max-w-[1200px] px-4 py-8 has-[[data-wide]]:max-w-[1680px] md:px-8 md:py-10">{children}</main>

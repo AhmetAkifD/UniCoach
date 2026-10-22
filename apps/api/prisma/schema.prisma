@@ -29,6 +29,10 @@ model User {
   role         UserRole   @default(STUDENT)
   /// Kayıtta seçilir; eski hesaplarda boş olabilir.
   examTrack    ExamTrack?
+  /// "system" | "light" | "dark" (packages/shared → THEMES)
+  theme        String     @default("system")
+  /// Profil fotoğrafı yüklendiyse son yükleme anı; dosya UPLOAD_DIR/avatars/<id>.jpg
+  avatarUpdatedAt DateTime?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
   sources      Source[]

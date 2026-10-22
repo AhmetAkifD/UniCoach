@@ -5,11 +5,14 @@
 import type {
   AuthResponse,
   AuthUser,
+  ChangePasswordInput,
   CheckEmailInput,
   CheckEmailResponse,
+  DeleteAccountInput,
   FieldErrors,
   LoginInput,
   RegisterInput,
+  UpdateProfileInput,
 } from "./auth";
 import type {
   CreateSourceInput,
@@ -17,7 +20,6 @@ import type {
   SourceDetail,
   SourceItem,
   SourceSummary,
-  UpdateProfileInput,
   UpdateSourceInput,
 } from "./library";
 import type {
@@ -109,6 +111,15 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       login: (input: LoginInput) => post<AuthResponse>("/auth/login", input),
       me: () => request<AuthUser>("/auth/me", { cache: "no-store" }),
       updateProfile: (input: UpdateProfileInput) => send<AuthUser>("PATCH", "/auth/me", input),
+      changePassword: (input: ChangePasswordInput) => send<void>("PUT", "/auth/me/password", input),
+      /** Hesabı ve bütün verilerini (kaynaklar, PDF'ler, sınavlar, defterler…) siler. */
+      deleteAccount: (input: DeleteAccountInput) => send<void>("DELETE", "/auth/me", input),
+      /**
+       * Profil fotoğrafı. Yükleme bu istemciyle gönderilmez: gövde ham JPEG'dir (`Content-Type: image/jpeg`),
+       * web `fetch` ile (mobil kendi dosya API'siyle) `avatarPath` adresine `PUT` eder.
+       */
+      removeAvatar: () => send<AuthUser>("DELETE", "/auth/me/avatar"),
+      avatarPath: `${baseUrl}/api/auth/me/avatar`,
     },
     sources: {
       list: () => request<SourceSummary[]>("/sources", { cache: "no-store" }),

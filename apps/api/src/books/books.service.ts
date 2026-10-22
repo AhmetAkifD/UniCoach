@@ -197,7 +197,7 @@ function filePath(id: string) {
   return path.join(BOOKS_DIR, `${id}.pdf`);
 }
 
-async function removeFiles(id: string) {
+export async function removeFiles(id: string) {
   await Promise.all([rm(filePath(id), { force: true }), rm(`${filePath(id)}.part`, { force: true })]);
 }
 
