@@ -10,7 +10,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <>
       <SiteHeader user={user} />
-      <main className="mx-auto max-w-[1200px] px-4 py-8 md:px-8 md:py-10">{children}</main>
+      {/* Çalışma alanı gibi geniş sayfalar (data-wide) daha geniş alan kullanır. */}
+      <main className="mx-auto max-w-[1200px] px-4 py-8 has-[[data-wide]]:max-w-[1680px] md:px-8 md:py-10">{children}</main>
     </>
   );
 }
