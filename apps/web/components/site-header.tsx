@@ -4,13 +4,7 @@ import { ROLE_LABELS, type AuthUser } from "@unicoach/shared";
 import { logoutAction } from "@/app/(auth)/actions";
 import { Badge } from "@/components/ui/badge";
 import { AppMenu } from "./app-menu";
-import { ThemeToggle } from "./theme-toggle";
-
-function initials(user: AuthUser) {
-  return [user.firstName, user.lastName]
-    .map((part) => part.trim().charAt(0).toLocaleUpperCase("tr"))
-    .join("");
-}
+import { UserAvatar } from "./user-avatar";
 
 export function SiteHeader({ user }: { user: AuthUser }) {
   const fullName = `${user.firstName} ${user.lastName}`.trim();
@@ -44,19 +38,13 @@ export function SiteHeader({ user }: { user: AuthUser }) {
         </div>
 
         <div className="ml-auto flex items-center gap-1">
-          <ThemeToggle />
           <Link
             href="/profil"
             aria-label="Profil"
             className="ml-1 flex items-center gap-2 rounded-md p-0.5 pr-1.5 transition-colors duration-fast hover:bg-surface-muted"
             title={`${fullName} · ${user.email}`}
           >
-            <span
-              aria-hidden
-              className="inline-flex size-9 items-center justify-center rounded-full bg-primary-soft text-sm font-semibold text-primary-soft-text"
-            >
-              {initials(user)}
-            </span>
+            <UserAvatar user={user} className="size-9 text-sm" />
             <span className="hidden max-w-40 truncate text-sm font-medium lg:inline">{fullName}</span>
             {user.role === "ADMIN" && <Badge tone="primary">{ROLE_LABELS.ADMIN}</Badge>}
           </Link>

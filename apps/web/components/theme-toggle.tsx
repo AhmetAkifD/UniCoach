@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
+import type { ThemePreference } from "@unicoach/shared";
 
 type Theme = "light" | "dark";
 const STORAGE_KEY = "uc-theme";
@@ -9,12 +10,30 @@ const STORAGE_KEY = "uc-theme";
 /** <head> içinde, sayfa boyanmadan önce çalışır; kayıtlı temayı uygular (yanıp sönmeyi önler). */
 export const themeInitScript = `try{var t=localStorage.getItem("${STORAGE_KEY}");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}`;
 
+/** Tema tercihini sayfaya uygular ve bir sonraki açılış için tarayıcıda saklar ("system" saklanmaz). */
+export function applyTheme(pref: ThemePreference) {
+  const root = document.documentElement;
+  if (pref === "system") delete root.dataset.theme;
+  else root.dataset.theme = pref;
+  try {
+    if (pref === "system") localStorage.removeItem(STORAGE_KEY);
+    else localStorage.setItem(STORAGE_KEY, pref);
+  } catch {}
+}
+
+/** Giriş yapmış kullanıcının hesabındaki tema bu cihaza da uygulanır (başka cihazda değiştirilmiş olabilir). */
+export function ThemeSync({ theme }: { theme: ThemePreference }) {
+  useEffect(() => applyTheme(theme), [theme]);
+  return null;
+}
+
 function currentTheme(): Theme {
   const explicit = document.documentElement.dataset.theme;
   if (explicit === "light" || explicit === "dark") return explicit;
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
+/** Giriş ve kayıt ekranlarındaki hızlı tema düğmesi (giriş yapınca tema profilden, hesaba kaydedilerek seçilir). */
 export function ThemeToggle() {
   const [theme, setTheme] = useState<Theme | null>(null);
 

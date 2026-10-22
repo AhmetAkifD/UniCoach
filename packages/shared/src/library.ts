@@ -163,14 +163,9 @@ export const progressSchema = z.object({
 });
 
 /** PATCH /api/auth/me */
-export const updateProfileSchema = z.object({
-  examTrack: z.enum(EXAM_TRACKS, { error: "YKS veya LGS seç." }),
-});
-
 export type CreateSourceInput = z.infer<typeof createSourceSchema>;
 export type UpdateSourceInput = z.infer<typeof updateSourceSchema>;
 export type ProgressInput = z.infer<typeof progressSchema>;
-export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 
 export interface SourceSummary {
   id: string;

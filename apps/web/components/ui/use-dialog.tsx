@@ -16,7 +16,13 @@ interface DialogOptions {
 type Request =
   | (DialogOptions & { kind: "confirm"; resolve: (ok: boolean) => void })
   | (DialogOptions & { kind: "alert"; resolve: (ok: boolean) => void })
-  | (DialogOptions & { kind: "prompt"; defaultValue: string; placeholder?: string; resolve: (value: string | null) => void });
+  | (DialogOptions & {
+      kind: "prompt";
+      defaultValue: string;
+      placeholder?: string;
+      inputType?: "text" | "password";
+      resolve: (value: string | null) => void;
+    });
 
 /**
  * Sayfa içi onay/soru pencereleri. Tarayıcının `confirm`/`prompt`/`alert` kutuları yerine kullanılır:
@@ -36,7 +42,7 @@ export function useDialog() {
     [],
   );
   const prompt = useCallback(
-    (options: DialogOptions & { defaultValue?: string; placeholder?: string }) =>
+    (options: DialogOptions & { defaultValue?: string; placeholder?: string; inputType?: "text" | "password" }) =>
       new Promise<string | null>((resolve) =>
         setRequest({ ...options, kind: "prompt", defaultValue: options.defaultValue ?? "", resolve }),
       ),
@@ -100,7 +106,9 @@ function DialogView({ request, onDone }: { request: Request; onDone: (value: boo
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder={request.placeholder ?? request.title}
-            maxLength={60}
+            type={request.inputType ?? "text"}
+            autoComplete={request.inputType === "password" ? "current-password" : undefined}
+            maxLength={request.inputType === "password" ? 100 : 60}
           />
         )}
         <div className="flex justify-end gap-3">

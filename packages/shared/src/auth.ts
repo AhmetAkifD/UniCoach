@@ -87,6 +87,54 @@ export const loginSchema = z.object({
   password: z.string({ error: "Şifreni yaz." }).min(1, { error: "Şifreni yaz." }),
 });
 
+/** Tema tercihi: "system" işletim sisteminin açık/koyu ayarını izler. Hesapta tutulur (web ve mobil aynı). */
+export const THEMES = ["system", "light", "dark"] as const;
+export type ThemePreference = (typeof THEMES)[number];
+export const THEME_LABELS: Record<ThemePreference, string> = { system: "Sistem", light: "Açık", dark: "Koyu" };
+
+/** PATCH /api/auth/me — verilen alanlar değişir. */
+export const updateProfileSchema = z
+  .object({
+    firstName: nameField("Ad").optional(),
+    lastName: nameField("Soyad").optional(),
+    examTrack: z.enum(EXAM_TRACKS, { error: "YKS veya LGS seç." }).optional(),
+    theme: z.enum(THEMES).optional(),
+  })
+  .refine((v) => Object.values(v).some((x) => x !== undefined), { error: "Değiştirilecek bir alan yok." });
+
+/** Kurallara uymayan şifrenin ilk hatası; uyuyorsa null. */
+export function passwordProblem(password: string): string | null {
+  const failed = PASSWORD_RULES.find((rule) => !rule.test(password));
+  return failed ? PASSWORD_RULE_ERRORS[failed.id] : null;
+}
+
+/** PUT /api/auth/me/password */
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string({ error: "Şu anki şifreni yaz." }).min(1, { error: "Şu anki şifreni yaz." }),
+    newPassword: z.string({ error: "Yeni şifreni yaz." }).min(1, { error: "Yeni şifreni yaz." }),
+  })
+  .superRefine(({ currentPassword, newPassword }, ctx) => {
+    const problem = passwordProblem(newPassword);
+    if (problem) ctx.addIssue({ code: "custom", path: ["newPassword"], message: problem });
+    else if (newPassword === currentPassword) {
+      ctx.addIssue({ code: "custom", path: ["newPassword"], message: "Yeni şifre eskisiyle aynı olamaz." });
+    }
+  });
+
+/** DELETE /api/auth/me — hesabı silmek için şifre yeniden istenir. */
+export const deleteAccountSchema = z.object({
+  password: z.string({ error: "Şifreni yaz." }).min(1, { error: "Şifreni yaz." }),
+});
+
+/** Profil fotoğrafı: tarayıcıda kare kırpılıp bu boyutta JPEG'e çevrilir, sunucu yalnızca JPEG kabul eder. */
+export const AVATAR_SIZE = 256;
+export const AVATAR_MAX_BYTES = 512 * 1024;
+
+export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+export type DeleteAccountInput = z.infer<typeof deleteAccountSchema>;
+
 export type CheckEmailInput = z.infer<typeof checkEmailSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
@@ -104,6 +152,9 @@ export interface AuthUser {
   role: UserRole;
   /** Eski hesaplarda boş olabilir; profilden seçilir. */
   examTrack: ExamTrack | null;
+  theme: ThemePreference;
+  /** Profil fotoğrafının adresi (değişince sorgu dizesi değişir); yoksa null → baş harfler gösterilir. */
+  avatarUrl: string | null;
   createdAt: string;
 }
 
