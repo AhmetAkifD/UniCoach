@@ -15,6 +15,8 @@ async function bootstrap() {
     // Web sitesi ve Expo'nun web önizlemesi (8081). Telefondaki uygulama tarayıcı olmadığı için CORS'a takılmaz.
     origin: (process.env.WEB_ORIGIN ?? "http://localhost:3000,http://localhost:8081").split(","),
     credentials: true,
+    // pdf.js başka kökenden (Expo web önizlemesi) Range ile okurken bu başlıkları görmeli; yoksa dosyanın tamamını indirir.
+    exposedHeaders: ["Accept-Ranges", "Content-Range", "Content-Length"],
   });
   app.enableShutdownHooks();
 

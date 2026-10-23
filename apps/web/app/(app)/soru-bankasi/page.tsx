@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { BookOpenText, Info, SearchX } from "lucide-react";
-import type { BookSummary } from "@unicoach/shared";
+import { bookTopics, groupByTopic } from "@unicoach/shared";
 import { LibraryFilters } from "@/components/library/library-filters";
 import { BookCard } from "@/components/question-bank/book-card";
 import { UploadBookButton } from "@/components/question-bank/upload-book-dialog";
@@ -10,15 +10,6 @@ import { subjectColor } from "@/lib/subject-color";
 import { subjectFilters } from "@/lib/subject-filters";
 
 export const metadata = { title: "Soru Bankası" };
-
-const collator = new Intl.Collator("tr-TR", { sensitivity: "base", numeric: true });
-
-/** Dersin PDF'leri konu etiketine göre ayrılır; konusuzlar en sonda. Hiç konu yoksa tek grup döner. */
-function byTopic(books: BookSummary[]) {
-  const topics = new Map<string | null, BookSummary[]>();
-  for (const book of books) topics.set(book.topic, [...(topics.get(book.topic) ?? []), book]);
-  return [...topics.entries()].sort(([a], [b]) => (a === null ? 1 : b === null ? -1 : collator.compare(a, b)));
-}
 
 export default async function QuestionBankPage({
   searchParams,
@@ -32,7 +23,7 @@ export default async function QuestionBankPage({
     track: user.examTrack,
     query,
   });
-  const topics = [...new Set(books.flatMap((b) => (b.topic ? [b.topic] : [])))].sort(collator.compare);
+  const topics = bookTopics(books);
 
   return (
     <div className="flex flex-col gap-8">
@@ -81,7 +72,7 @@ export default async function QuestionBankPage({
       ) : (
         groups.map(({ subject, items }) => {
           const color = subjectColor(subject.id);
-          const topicGroups = byTopic(items);
+          const topicGroups = groupByTopic(items);
           const showTopics = topicGroups.some(([topic]) => topic !== null);
           return (
             <section key={subject.id} aria-labelledby={`ders-${subject.id}`} className="flex flex-col gap-4">

@@ -24,7 +24,7 @@ export const modules: ModuleInfo[] = [
     title: "Soru Bankası",
     description: "Soru kitaplarının PDF'leri, derslerine ve konularına göre. Kaldığın sayfadan devam et.",
     icon: BookOpenText,
-    ready: false,
+    ready: true,
   },
   {
     route: null,

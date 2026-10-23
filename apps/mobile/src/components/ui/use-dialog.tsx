@@ -19,6 +19,8 @@ interface PromptOptions {
   /** Kutunun ilk değeri (ör. yeniden adlandırmada şu anki ad) */
   defaultValue?: string;
   maxLength?: number;
+  /** Klavye türü (ör. numara için "number-pad") */
+  keyboardType?: "default" | "number-pad";
 }
 
 type Request =
@@ -93,6 +95,8 @@ function DialogView({ request, onDone }: { request: Request; onDone: (value: boo
               placeholder={request.placeholder ?? request.title}
               secureTextEntry={request.secure}
               maxLength={request.maxLength}
+              keyboardType={request.keyboardType}
+              selectTextOnFocus
               autoCapitalize="none"
               onSubmitEditing={submit}
             />

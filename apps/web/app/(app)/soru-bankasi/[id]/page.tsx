@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { ApiError, type BookSummary } from "@unicoach/shared";
+import { ApiError, bookTopics, type BookSummary } from "@unicoach/shared";
 import { BookViewer } from "@/components/question-bank/book-viewer";
 import { authedApi, requireUser } from "@/lib/session";
 import { subjectColor } from "@/lib/subject-color";
@@ -16,7 +16,7 @@ export default async function BookPage({ params }: { params: Promise<{ id: strin
     if (err instanceof ApiError && err.status === 404) notFound();
     throw err;
   }
-  const topics = [...new Set(books.flatMap((b) => (b.topic ? [b.topic] : [])))].sort((a, b) => a.localeCompare(b, "tr"));
+  const topics = bookTopics(books);
   return <BookViewer book={book} examTrack={user.examTrack} color={subjectColor(book.subject)} topics={topics} />;
 }
 

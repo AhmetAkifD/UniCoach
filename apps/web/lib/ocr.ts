@@ -1,6 +1,6 @@
 import type { Worker } from "tesseract.js";
 import type { PDFDocumentProxy } from "./pdf";
-import type { PageText } from "./question-detect";
+import type { PageText } from "@unicoach/shared";
 
 /** Taranmış sayfa bu ölçekte (≈216 dpi) resme çevrilip okunur; daha küçüğünde Türkçe harfler bozuluyor. */
 const OCR_SCALE = 3;
