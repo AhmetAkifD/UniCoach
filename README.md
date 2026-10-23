@@ -67,13 +67,27 @@ npm run dev          # API → http://localhost:4000, web → http://localhost:3
 - Yüklenen PDF'ler `apps/api/storage/` altında durur (git'e girmez). Silmek için bu klasörü silebilirsiniz; veritabanındaki kayıtlar dosyasız kalır.
 - `npm run build` ya da `prisma generate` çalıştırmadan önce `npm run dev`'i durdurun: Windows'ta çalışan API, Prisma'nın motor dosyasını kilitler (`EPERM` hatası).
 
+### Mobil uygulama
+
+API açıkken (`npm run dev`) ikinci bir terminalde:
+
+```bash
+npm run mobile
+```
+
+- **Android emülatörü:** terminalde `a` tuşuna basın; Expo Go emülatöre kendiliğinden kurulur ve uygulama açılır.
+- **Telefon:** Expo Go ile QR kodu okutun. Telefon ve bilgisayar aynı Wi‑Fi ağında olmalı, Windows güvenlik duvarı 4000 portuna izin vermeli. Uygulama SDK 58 kullanır; Play Store'daki Expo Go henüz bu sürümü desteklemiyorsa emülatörü kullanın.
+- Tarayıcı önizlemesi: `npm run web -w @unicoach/mobile` (http://localhost:8081).
+
+Mobilde şimdilik giriş, ana sayfa, profil ve Konu Anlatımı var; diğer modüller sırayla ekleniyor.
+
 ## Mimari
 
 ```
 apps/
   api/      NestJS + Prisma + PostgreSQL — REST API (/api/*)
   web/      Next.js + Tailwind — web sitesi
-  mobile/   Expo (React Native) — mobil uygulama (planlandı)
+  mobile/   Expo SDK 58 (React Native) — mobil uygulama
 packages/
   shared/   Ortak tipler, API istemcisi, net/puan hesapları
   design/   Tasarım token'ları (renk, yazı tipi, boşluk) — web ve mobil için tek kaynak
