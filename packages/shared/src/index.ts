@@ -10,3 +10,5 @@ export * from "./programs";
 export * from "./preferences";
 export * from "./notebooks";
 export * from "./subject-filters";
+export * from "./question-detect";
+export * from "./question-editing";

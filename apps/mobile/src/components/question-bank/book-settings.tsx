@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { View } from "react-native";
-import { Info, Pencil, Trash2 } from "lucide-react-native";
-import { radius, spacing } from "@unicoach/design";
+import { router } from "expo-router";
+import { ListChecks, Pencil, Trash2 } from "lucide-react-native";
+import { spacing } from "@unicoach/design";
 import { ApiError, findSubject, formatBytes, type BookSummary, type ExamTrack } from "@unicoach/shared";
 import { SubjectSelect } from "@/components/library/subject-select";
 import { Button } from "@/components/ui/button";
@@ -105,12 +106,15 @@ export function BookSettings({
           ))}
         </View>
 
-        <View style={{ flexDirection: "row", gap: spacing[2], alignItems: "flex-start", borderRadius: radius.md, backgroundColor: colors.infoSoft, padding: spacing[3] }}>
-          <Info size={16} color={colors.info} style={{ marginTop: 2 }} />
-          <Text size="sm" tone="info" style={{ flex: 1 }}>
-            Soruları çıkarma ve cevap anahtarını düzenleme şimdilik web sitesinde.
-          </Text>
-        </View>
+        <Button
+          icon={<ListChecks size={18} color={colors.onPrimary} />}
+          onPress={() => {
+            onClose();
+            router.push({ pathname: "/sorular/[id]", params: { id: book.id } });
+          }}
+        >
+          {book.questionCount ? `Soruları düzenle (${book.questionCount})` : "Soruları çıkar"}
+        </Button>
 
         <View style={{ gap: spacing[4] }}>
           <View style={{ gap: 6 }}>

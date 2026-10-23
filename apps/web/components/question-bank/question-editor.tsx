@@ -29,9 +29,32 @@ import {
   type DetectMethod,
   findSubject,
   type BookQuestion,
-  type BookQuestionInput,
   type BookSummary,
   type ChoiceLetter,
+  MIN_QUESTION_BOX,
+  applyTestKey,
+  detectOnPage,
+  duplicateQuestionKeys,
+  pageDetectionNotice,
+  pageHasText,
+  parseAnswerKeyText,
+  questionForBox,
+  questionsForSave,
+  readLastPageKeys,
+  rectFromPoints,
+  roundRect,
+  scanDocument,
+  scanNotice,
+  sortQuestions,
+  splitTestFrom,
+  suggestTestName,
+  testNameTaken,
+  testSections,
+  DEFAULT_PAGE_WIDTH,
+  type AnswerKeyGroups,
+  type EditorQuestion,
+  type PageText,
+  type QuestionRect,
 } from "@unicoach/shared";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -40,23 +63,9 @@ import { useDialog } from "@/components/ui/use-dialog";
 import { browserApi } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { openPdf, pageText, type PDFDocumentProxy } from "@/lib/pdf";
-import {
-  applyAnswerKeys,
-  applyPageBottomKey,
-  applyRenames,
-  detectDocument,
-  detectPage,
-  detectPageByChoices,
-  parseAnswerKeyPage,
-  parseAnswerKeyText,
-  type DetectedQuestion,
-  type DetectState,
-  type PageText,
-} from "@/lib/question-detect";
-
-/** Düzenleyicideki soru: kaydedilmemiş olabileceği için kendi anahtarıyla izlenir. */
-type Q = BookQuestionInput & { key: string };
-type Rect = { x: number; y: number; w: number; h: number };
+/** Düzenleyicideki soru (kurallar packages/shared/src/question-editing.ts'te; mobil de aynılarını kullanır). */
+type Q = EditorQuestion;
+type Rect = QuestionRect;
 /** Boyutlandırma tutamacı: kenar (n, s, e, w) ya da köşe (nw, ne, sw, se). */
 type Edge = "n" | "s" | "e" | "w" | "nw" | "ne" | "sw" | "se";
 type Drag =
@@ -65,28 +74,8 @@ type Drag =
   | { kind: "draw"; start: { x: number; y: number } };
 type Notice = { tone: "success" | "danger" | "info"; text: string };
 
-/** Metin katmanında sayfa başına bundan az karakter varsa sayfa taranmış sayılır ve OCR'a gönderilir. */
-const MIN_TEXT_CHARS = 40;
-/** Elle çizilen kutu bundan küçükse (PDF noktası) yok sayılır. */
-const MIN_BOX = 12;
-
-/** Anahtarı testlere sırayla eşlemek için soruların PDF sırası (sayfa → x → y; sütun ayrımı kaba). */
-const sortForKey = <T extends { page: number; x: number; y: number }>(qs: T[]) =>
-  [...qs].sort((a, b) => a.page - b.page || (a.x > 297 ? 1 : 0) - (b.x > 297 ? 1 : 0) || a.y - b.y);
-
-const hasText = (p: PageText) => p.items.reduce((sum, i) => sum + i.s.length, 0) >= MIN_TEXT_CHARS;
-
-let keySeq = 0;
-const newKey = () => `yeni-${++keySeq}`;
-
 const isTyping = (el: EventTarget | null) =>
   el instanceof HTMLElement && (el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName));
-
-/** PDF sırası: sayfa → sütun (sol/sağ) → yukarıdan aşağı. */
-function orderKey(q: Rect & { page: number }, pageWidth: number) {
-  const col = q.x + q.w / 2 >= pageWidth / 2 ? 1 : 0;
-  return q.page * 1e7 + col * 1e6 + q.y;
-}
 
 export function QuestionEditor({
   book,
@@ -163,25 +152,18 @@ export function QuestionEditor({
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
 
-  const widthOf = (p: number) => pageWidths.current.get(p) ?? 595;
+  const widthOf = (p: number) => pageWidths.current.get(p) ?? DEFAULT_PAGE_WIDTH;
   const sorted = useMemo(
-    () => [...questions].sort((a, b) => orderKey(a, widthOf(a.page)) - orderKey(b, widthOf(b.page))),
+    () => sortQuestions(questions, widthOf),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [questions],
   );
   const onPage = sorted.filter((q) => q.page === page);
   const current = questions.find((q) => q.key === selected) ?? null;
-  const sections = [...new Set(sorted.map((q) => q.section))];
+  const sections = testSections(sorted);
 
   /** Aynı testte aynı numara iki kez varsa kaydedilemez. */
-  const duplicates = useMemo(() => {
-    const seen = new Map<string, number>();
-    for (const q of questions) {
-      const k = `${q.section.toLocaleLowerCase("tr-TR")}#${q.number}`;
-      seen.set(k, (seen.get(k) ?? 0) + 1);
-    }
-    return new Set(questions.filter((q) => seen.get(`${q.section.toLocaleLowerCase("tr-TR")}#${q.number}`)! > 1).map((q) => q.key));
-  }, [questions]);
+  const duplicates = useMemo(() => duplicateQuestionKeys(questions), [questions]);
 
   // --- Soru bulma ---
   /** Sayfanın metni; `allowOcr` kapalıysa metinsiz sayfa OCR'a gönderilmez (boş döner). */
@@ -189,39 +171,19 @@ export function QuestionEditor({
     if (!doc) throw new Error("PDF açılmadı.");
     const text = await pageText(doc, n);
     pageWidths.current.set(n, text.width);
-    if (detectMethod === "text" || (detectMethod === "auto" && (hasText(text) || !allowOcr))) return text;
+    if (detectMethod === "text" || (detectMethod === "auto" && (pageHasText(text) || !allowOcr))) return text;
     const { ocrPageText } = await import("@/lib/ocr");
     return { ...(await ocrPageText(doc, n)), ocr: true };
   }
 
-  /**
-   * Ayrı cevap anahtarı sayfaları (ÖSYM): PDF'in sonundan geriye doğru, anahtar olmayan ilk sayfaya kadar
-   * (en fazla 6 sayfa) okunur. "Bu sayfada bul" da cevapları buradan alır; sonuç PDF başına bir kez hesaplanır.
-   */
-  const lastPageKeysRef = useRef<Promise<ReturnType<typeof parseAnswerKeyPage>> | null>(null);
+  /** Ayrı cevap anahtarı sayfaları (ÖSYM): PDF başına bir kez okunur; "Bu sayfada bul" da cevapları buradan alır. */
+  const lastPageKeysRef = useRef<Promise<AnswerKeyGroups | null> | null>(null);
   function lastPageKeys() {
-    lastPageKeysRef.current ??= (async () => {
-      if (!doc) return null;
-      const keys: NonNullable<ReturnType<typeof parseAnswerKeyPage>> = [];
-      let misses = 0;
-      for (let n = doc.numPages; n >= Math.max(1, doc.numPages - 5) && misses < 2; n--) {
-        const key = parseAnswerKeyPage(await pageText(doc, n));
-        if (key) keys.unshift(...key);
-        else if (keys.length) break;
-        else misses++;
-      }
-      return keys.length ? keys : null;
-    })();
+    const pdf = doc;
+    if (!pdf) return Promise.resolve(null);
+    lastPageKeysRef.current ??= readLastPageKeys(pdf.numPages, (n) => pageText(pdf, n));
     return lastPageKeysRef.current;
   }
-
-  // Şık metinleri saklanmaz: şıklar soru görselinin içindedir, öğrenci yalnızca doğru harfi seçer.
-  const toQ = (d: DetectedQuestion): Q => ({
-    ...d,
-    answer: (d.answer as ChoiceLetter | null) ?? null,
-    choices: [],
-    key: newKey(),
-  });
 
   async function detectThisPage() {
     if (!doc) return;
@@ -239,56 +201,16 @@ export function QuestionEditor({
     try {
       const text = await readPage(page);
       if (text.ocr) setBusy("Metin tanıma (OCR) çalışıyor…");
-      const key = keyMethod === "auto" || keyMethod === "lastPages" ? parseAnswerKeyPage(text) : null;
-      if (key) {
-        const all: DetectedQuestion[] = sorted.map((q) => ({ ...q }));
-        applyAnswerKeys(all, key);
-        const answers = new Map(all.map((q, i) => [sorted[i]!.key, q.answer as ChoiceLetter | null]));
-        edit((qs) => qs.map((q) => ({ ...q, answer: answers.get(q.key) ?? q.answer })));
-        const count = key.reduce((n, k) => n + k.answers.size, 0);
-        setNotice({ tone: "success", text: `Bu sayfa bir cevap anahtarı: ${count} cevap testlere işlendi.` });
-        return;
-      }
-      // Önceki sayfalardaki son soru, testin adını ve numara sırasını belirler.
-      const before = sorted.filter((q) => q.page < page);
-      const prev = before[before.length - 1];
-      const state: DetectState = {
-        section: prev?.section ?? null,
-        lastNumber: prev?.number ?? 0,
-        testCount: new Set(before.map((q) => q.section)).size,
-        heading: null,
-        // Diğer sayfalardaki test adları tekrar kullanılmaz.
-        used: new Set(sorted.filter((q) => q.page !== page).map((q) => q.section)),
-        renames: new Map(),
-      };
-      const detected = (text.ocr ? detectPageByChoices : detectPage)(text, state, defaultChoiceCount);
-      if (keyMethod === "auto" || keyMethod === "pageBottom") applyPageBottomKey(text, detected);
-      const found = detected.map(toQ);
-      // Başlık bu sayfada bulunduysa önceki sayfalardaki aynı testin adı da güncellenir.
-      const rest = questions.filter((q) => q.page !== page).map((q) => ({ ...q }));
-      applyRenames(rest, state);
-      const all = [...rest, ...found];
-      // Cevaplar son sayfalardaki anahtardan (ÖSYM düzeni); yalnızca boş olanlar doldurulur.
-      const keys = keyMethod === "auto" || keyMethod === "lastPages" ? await lastPageKeys() : null;
-      if (keys) {
-        const copy: DetectedQuestion[] = sortForKey(all).map((q) => ({ ...q }));
-        applyAnswerKeys(copy, keys);
-        const byKey = new Map(sortForKey(all).map((q, i) => [q.key, copy[i]!.answer as ChoiceLetter | null]));
-        for (const q of found) {
-          const answer = byKey.get(q.key);
-          if (!q.answer && answer) q.answer = answer;
-        }
-      }
-      edit(() => all);
-      setSelected(null);
-      setNotice(
-        found.length
-          ? {
-              tone: "success",
-              text: `${found.length} soru bulundu${found.some((q) => q.answer) ? `, ${found.filter((q) => q.answer).length} tanesinin cevabı okundu` : ""}${text.ocr ? " (metin tanımayla — kutuları ve numaraları kontrol et)" : ""}.`,
-            }
-          : { tone: "info", text: "Bu sayfada soru bulunamadı. Kutuları sayfanın üzerine sürükleyerek çizebilirsin." },
-      );
+      const result = detectOnPage({
+        text,
+        sorted,
+        keyMethod,
+        defaultChoiceCount,
+        lastPageKeys: keyMethod === "auto" || keyMethod === "lastPages" ? await lastPageKeys() : null,
+      });
+      edit(() => result.questions);
+      if (result.kind === "questions") setSelected(null);
+      setNotice(pageDetectionNotice(result));
     } catch {
       setNotice({ tone: "danger", text: "Sayfa okunamadı." });
     } finally {
@@ -309,39 +231,26 @@ export function QuestionEditor({
       return;
     setNotice(null);
     cancelRef.current = false;
-    const pages: PageText[] = [];
-    let ocrPages = 0;
     try {
-      // Otomatikte: PDF'in çoğu metinliyse metinsiz sayfalar kapak/görseldir, metin tanımaya gönderilmez.
-      let allowOcr = true;
-      if (detectMethod === "auto") {
-        setBusy("PDF inceleniyor…");
-        let textual = 0;
-        for (let n = 1; n <= doc.numPages; n++) if (hasText(await pageText(doc, n))) textual++;
-        allowOcr = textual < doc.numPages / 2;
-      }
-      for (let n = 1; n <= doc.numPages; n++) {
-        if (cancelRef.current) {
-          setNotice({ tone: "info", text: "Tarama durduruldu; sorular değişmedi." });
-          return;
-        }
-        setBusy(`Sayfa ${n}/${doc.numPages} okunuyor…${ocrPages ? " (metin tanıma, sayfa başına birkaç saniye)" : ""}`);
-        const text = await readPage(n, allowOcr);
-        if (text.ocr && text.items.length > 20) ocrPages++;
-        pages.push(text);
-      }
-      const found = detectDocument(pages, { defaultChoiceCount, keyMethod }).map(toQ);
-      edit(() => found);
-      setSelected(null);
-      setPage(found[0]?.page ?? 1);
-      const answered = found.filter((q) => q.answer).length;
-      const testCount = new Set(found.map((q) => q.section)).size;
-      setNotice({
-        tone: found.length ? "success" : "info",
-        text: found.length
-          ? `${testCount} testte ${found.length} soru bulundu, ${answered} tanesinin cevabı anahtardan okundu.${ocrPages ? ` ${ocrPages} sayfa metin tanımayla okundu; o sayfaları kontrol et.` : ""}`
-          : "Soru bulunamadı. Kutuları sayfanın üzerine sürükleyerek çizebilirsin.",
+      const pdf = doc;
+      const result = await scanDocument({
+        pageCount: pdf.numPages,
+        detectMethod,
+        keyMethod,
+        defaultChoiceCount,
+        readText: readPage,
+        readTextLayer: (n) => pageText(pdf, n),
+        onProgress: setBusy,
+        cancelled: () => cancelRef.current,
       });
+      if (!result) {
+        setNotice({ tone: "info", text: "Tarama durduruldu; sorular değişmedi." });
+        return;
+      }
+      edit(() => result.questions);
+      setSelected(null);
+      setPage(result.questions[0]?.page ?? 1);
+      setNotice(scanNotice(result.questions, result.ocrPages));
     } catch {
       setNotice({ tone: "danger", text: "PDF taranırken bir hata oldu." });
     } finally {
@@ -357,7 +266,7 @@ export function QuestionEditor({
     try {
       const saved = await browserApi.books.saveQuestions(book.id, {
         // Kayıtlı soruların kimliği gönderilir; sınavlardaki bağlantılar kopmaz.
-        questions: sorted.map(({ key, ...q }) => ({ ...q, id: key.startsWith("yeni-") ? undefined : key, choices: [] })),
+        questions: questionsForSave(sorted),
       });
       setQuestions(saved.map(({ id, ...q }) => ({ ...q, key: id })));
       setSelected((s) => {
@@ -476,7 +385,7 @@ export function QuestionEditor({
     if (!drag || !size) return;
     const p = toPoint(e);
     if (drag.kind === "draw") {
-      setGhost(normalize(drag.start, p));
+      setGhost(rectFromPoints(drag.start, p));
     } else if (drag.kind === "move") {
       const x = Math.min(Math.max(0, drag.orig.x + p.x - drag.start.x), size.w - drag.orig.w);
       const y = Math.min(Math.max(0, drag.orig.y + p.y - drag.start.y), size.h - drag.orig.h);
@@ -488,7 +397,7 @@ export function QuestionEditor({
       const right = drag.edge.includes("e") ? p.x : o.x + o.w;
       const top = drag.edge.includes("n") ? p.y : o.y;
       const bottom = drag.edge.includes("s") ? p.y : o.y + o.h;
-      setRect(drag.key, normalize({ x: left, y: top }, { x: right, y: bottom }));
+      setRect(drag.key, rectFromPoints({ x: left, y: top }, { x: right, y: bottom }));
     }
   }
 
@@ -498,23 +407,10 @@ export function QuestionEditor({
     if (!drag) return;
     if (drag.kind !== "draw") return setDirty(true);
     // Kutu bırakılan noktadan hesaplanır (hızlı sürüklemede son çizim ekrana yansımamış olabilir).
-    const rect = normalize(drag.start, toPoint(e));
+    const rect = rectFromPoints(drag.start, toPoint(e));
     setGhost(null);
-    if (!rect || rect.w < MIN_BOX || rect.h < MIN_BOX) return;
-    // Yeni soru, PDF sırasında kendinden önceki sorunun testinde ve bir sonraki numarayla açılır.
-    const at = orderKey({ ...rect, page }, widthOf(page));
-    const prev = sorted.filter((q) => orderKey(q, widthOf(q.page)) < at).pop();
-    const section = prev?.section ?? sections[0] ?? "Test 1";
-    const q: Q = {
-      key: newKey(),
-      section,
-      number: (prev && prev.section === section ? prev.number : 0) + 1,
-      page,
-      ...roundRect(rect),
-      choiceCount: defaultChoiceCount,
-      answer: null,
-      choices: [],
-    };
+    if (!rect || rect.w < MIN_QUESTION_BOX || rect.h < MIN_QUESTION_BOX) return;
+    const q = questionForBox({ rect, page, sorted, widthOf, defaultChoiceCount });
     edit((qs) => [...qs, q]);
     setSelected(q.key);
     // Yeni kutunun numarası hemen sorulur: önerilen numara seçili gelir, yazıp Enter'a basılır.
@@ -557,26 +453,21 @@ export function QuestionEditor({
    * OCR'ın kaçırdığı "test yeniden 1'den başlıyor" durumunu tek tıkla düzeltmek için.
    */
   async function splitFrom(key: string) {
-    const index = sorted.findIndex((q) => q.key === key);
-    const from = sorted[index];
+    const from = sorted.find((q) => q.key === key);
     if (!from) return;
-    let suggestion = sections.length + 1;
-    while (sections.includes(`Test ${suggestion}`)) suggestion++;
     const name = await prompt({
       title: "Buradan yeni test başlat",
       message: "Bu soru ve testteki sonrakiler yeni teste taşınır, 1'den numaralanır.",
-      defaultValue: `Test ${suggestion}`,
+      defaultValue: suggestTestName(sections),
       placeholder: "Yeni testin adı",
       confirmLabel: "Başlat",
     });
     if (!name) return;
-    if (sections.some((s) => s !== from.section && s.toLocaleLowerCase("tr-TR") === name.toLocaleLowerCase("tr-TR"))) {
+    if (testNameTaken(sections, name, from.section)) {
       await alert({ title: "Bu ad kullanılıyor", message: `"${name}" adında bir test zaten var; başka bir ad seç.` });
       return;
     }
-    const moved = sorted.slice(index).filter((q) => q.section === from.section);
-    const numbers = new Map(moved.map((q, i) => [q.key, i + 1]));
-    edit((qs) => qs.map((q) => (numbers.has(q.key) ? { ...q, section: name.slice(0, 60), number: numbers.get(q.key)! } : q)));
+    edit((qs) => splitTestFrom(qs, sorted, key, name));
   }
 
   const patch = (key: string, value: Partial<Q>) => edit((qs) => qs.map((q) => (q.key === key ? { ...q, ...value } : q)));
@@ -840,18 +731,11 @@ export function QuestionEditor({
               <AnswerKeyForm
                 sections={sections}
                 onApply={(section, map) => {
-                  let count = 0;
-                  edit((qs) =>
-                    qs.map((q) => {
-                      const letter = q.section === section ? map.get(q.number) : undefined;
-                      if (!letter) return q;
-                      count++;
-                      return { ...q, answer: letter as ChoiceLetter };
-                    }),
-                  );
+                  const result = applyTestKey(questions, section, map);
+                  edit(() => result.questions);
                   setNotice({ tone: "success", text: `"${section}" testine cevaplar işlendi.` });
                   setKeyPanel(false);
-                  return count;
+                  return result.count;
                 }}
               />
             )}
@@ -860,15 +744,6 @@ export function QuestionEditor({
       </div>
     </div>
   );
-}
-
-function roundRect(r: Rect): Rect {
-  const round = (n: number) => Math.round(n * 10) / 10;
-  return { x: round(r.x), y: round(r.y), w: Math.max(1, round(r.w)), h: Math.max(1, round(r.h)) };
-}
-
-function normalize(a: { x: number; y: number }, b: { x: number; y: number }): Rect {
-  return { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(a.x - b.x), h: Math.abs(a.y - b.y) };
 }
 
 function QuestionBox({ q, scale, selected, duplicate }: { q: Q; scale: number; selected: boolean; duplicate: boolean }) {

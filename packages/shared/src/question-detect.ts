@@ -9,7 +9,7 @@
  * Cevap anahtarı sayfaları ("1. B", "2. A" … çiftleri) soru olarak değil, anahtar olarak okunur.
  */
 
-import type { AnswerKeyMethod } from "@unicoach/shared";
+import type { AnswerKeyMethod } from "./question-bank";
 
 /** Sayfadaki tek metin parçası. y, parçanın taban çizgisi değil üst kenarıdır. */
 export interface TextItem {

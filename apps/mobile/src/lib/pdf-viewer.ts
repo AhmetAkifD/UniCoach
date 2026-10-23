@@ -9,7 +9,7 @@
  */
 
 /** cdnjs'teki pdf.js sürümü (klasik betik; eski WebView'lerde de çalışır). */
-const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174";
+export const PDFJS_CDN = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174";
 
 /** Sayfadan uygulamaya gelen mesajlar */
 export type PdfEvent =
@@ -45,7 +45,7 @@ html,body{margin:0;background:${config.background};-webkit-tap-highlight-color:t
 .page{position:relative;width:calc(100vw - 16px);background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);aspect-ratio:1/1.414}
 .page canvas{position:absolute;inset:0;width:100%;height:100%}
 </style>
-<script src="${PDFJS}/pdf.min.js"></script>
+<script src="${PDFJS_CDN}/pdf.min.js"></script>
 </head><body><div id="pages"></div>
 <script>
 var cfg = ${JSON.stringify(config)};
@@ -63,10 +63,10 @@ window.uc = {
 };
 // Worker başka kökenden doğrudan açılamaz; betik indirilip bu sayfanın kökeninde çalıştırılır.
 function setupWorker() {
-  return fetch("${PDFJS}/pdf.worker.min.js").then(function (r) { return r.text(); }).then(function (code) {
+  return fetch("${PDFJS_CDN}/pdf.worker.min.js").then(function (r) { return r.text(); }).then(function (code) {
     pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(new Blob([code], { type: "text/javascript" }));
   }).catch(function () {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = "${PDFJS}/pdf.worker.min.js";
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "${PDFJS_CDN}/pdf.worker.min.js";
   });
 }
 function render(n) {

@@ -1,13 +1,14 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, AppState, Pressable, View } from "react-native";
-import { Stack, router, useLocalSearchParams } from "expo-router";
+import { Stack, router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ChevronLeft, ChevronRight, Info, TriangleAlert } from "lucide-react-native";
+import { ChevronLeft, ChevronRight, Info, ListChecks, TriangleAlert } from "lucide-react-native";
 import { radius, spacing } from "@unicoach/design";
 import { ApiError, bookTopics, type BookSummary } from "@unicoach/shared";
 import { BookSettings } from "@/components/question-bank/book-settings";
 import { PdfFrame } from "@/components/question-bank/pdf-frame";
 import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
 import { Text } from "@/components/ui/text";
 import { useDialog } from "@/components/ui/use-dialog";
 import { api, getApiToken } from "@/lib/api";
@@ -40,9 +41,12 @@ export default function BookScreen() {
     }
   }, [id]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  // Sorular çıkarılıp dönülünce soru sayısı güncellensin.
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [load]),
+  );
 
   if (!book) {
     return (
@@ -72,9 +76,19 @@ export default function BookScreen() {
         options={{
           title: book.title,
           headerRight: () => (
-            <Pressable accessibilityRole="button" accessibilityLabel="PDF bilgileri ve ayarları" onPress={() => setSettingsOpen(true)} hitSlop={10}>
-              <Info size={22} color={colors.text} />
-            </Pressable>
+            <View style={{ flexDirection: "row", gap: spacing[5] }}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Soruları çıkar"
+                onPress={() => router.push({ pathname: "/sorular/[id]", params: { id: book.id } })}
+                hitSlop={10}
+              >
+                <ListChecks size={22} color={colors.text} />
+              </Pressable>
+              <Pressable accessibilityRole="button" accessibilityLabel="PDF bilgileri ve ayarları" onPress={() => setSettingsOpen(true)} hitSlop={10}>
+                <Info size={22} color={colors.text} />
+              </Pressable>
+            </View>
           ),
         }}
       />
@@ -218,9 +232,9 @@ function BookReader({ book, onBookChange }: { book: BookSummary; onBookChange: (
           borderTopColor: colors.border,
         }}
       >
-        <PageButton label="Önceki sayfa" disabled={status !== "ready" || page <= 1} onPress={() => goTo(page - 1)}>
+        <IconButton label="Önceki sayfa" disabled={status !== "ready" || page <= 1} onPress={() => goTo(page - 1)}>
           <ChevronLeft size={22} color={colors.text} />
-        </PageButton>
+        </IconButton>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Sayfa ${page} / ${pageCount}. Başka sayfaya gitmek için dokun.`}
@@ -232,33 +246,11 @@ function BookReader({ book, onBookChange }: { book: BookSummary; onBookChange: (
             {pageCount ? `Sayfa ${page} / ${pageCount}` : "Sayfa —"}
           </Text>
         </Pressable>
-        <PageButton label="Sonraki sayfa" disabled={status !== "ready" || page >= pageCount} onPress={() => goTo(page + 1)}>
+        <IconButton label="Sonraki sayfa" disabled={status !== "ready" || page >= pageCount} onPress={() => goTo(page + 1)}>
           <ChevronRight size={22} color={colors.text} />
-        </PageButton>
+        </IconButton>
       </View>
     </View>
   );
 }
 
-function PageButton({ label, disabled, onPress, children }: { label: string; disabled: boolean; onPress: () => void; children: ReactNode }) {
-  const { colors } = useTheme();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      disabled={disabled}
-      onPress={onPress}
-      style={({ pressed }) => ({
-        width: 44,
-        height: 44,
-        borderRadius: radius.md,
-        alignItems: "center",
-        justifyContent: "center",
-        opacity: disabled ? 0.35 : 1,
-        backgroundColor: pressed ? colors.surfaceMuted : "transparent",
-      })}
-    >
-      {children}
-    </Pressable>
-  );
-}

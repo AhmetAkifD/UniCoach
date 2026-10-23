@@ -1,6 +1,6 @@
 import { useImperativeHandle, useMemo, useRef, type Ref } from "react";
-import { View, type StyleProp, type ViewStyle } from "react-native";
-import { WebView } from "react-native-webview";
+import type { StyleProp, ViewStyle } from "react-native";
+import { PageFrame, type PageFrameHandle } from "@/components/page-frame";
 import { API_BASE_URL } from "@/lib/api";
 import { pdfViewerHtml, type PdfEvent, type PdfFrameHandle, type PdfViewerConfig } from "@/lib/pdf-viewer";
 
@@ -13,37 +13,22 @@ export interface PdfFrameProps {
 }
 
 /**
- * PDF görüntüleyici (telefon): pdf.js sayfası WebView'de. Sayfa API'nin kökeniyle (`baseUrl`) açılır ki PDF
- * istekleri aynı kökenden gitsin (CORS yok, Range başlıkları okunur).
+ * PDF görüntüleyici: pdf.js sayfası. Telefonda API'nin kökeniyle (`baseUrl`) açılır ki PDF istekleri aynı kökenden
+ * gitsin (CORS yok, Range başlıkları okunur); web önizlemesinde API başlıkları CORS ile açar.
  */
 export function PdfFrame({ ref, config, onEvent, style }: PdfFrameProps) {
-  const webRef = useRef<WebView<object>>(null);
+  const frameRef = useRef<PageFrameHandle>(null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const html = useMemo(() => pdfViewerHtml(config), []);
-
-  useImperativeHandle(ref, () => ({
-    goTo: (page) => webRef.current?.injectJavaScript(`window.uc.goTo(${Math.floor(page)});true;`),
-  }));
-
+  useImperativeHandle(ref, () => ({ goTo: (page) => frameRef.current?.call("goTo", Math.floor(page)) }));
   return (
-    // WebView `style`'ı iç görünüme uygular; boyut dıştaki View'dadır (bkz. youtube-frame.tsx).
-    <View style={[{ overflow: "hidden", backgroundColor: config.background }, style]}>
-      <WebView<object>
-        ref={webRef}
-        source={{ html, baseUrl: `${API_BASE_URL}/` }}
-        originWhitelist={["*"]}
-        style={{ flex: 1, backgroundColor: config.background }}
-        setBuiltInZoomControls
-        setDisplayZoomControls={false}
-        setSupportMultipleWindows={false}
-        onMessage={(e) => {
-          try {
-            onEvent(JSON.parse(e.nativeEvent.data) as PdfEvent);
-          } catch {
-            // Sayfadan gelen başka mesajlar yok sayılır.
-          }
-        }}
-      />
-    </View>
+    <PageFrame
+      ref={frameRef}
+      html={html}
+      baseUrl={`${API_BASE_URL}/`}
+      background={config.background}
+      onMessage={(m) => onEvent(m as PdfEvent)}
+      style={style}
+    />
   );
 }
