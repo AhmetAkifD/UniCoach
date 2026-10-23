@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 import { fonts, useTheme } from "@/lib/theme";
 
-/** Giriş yapılmış uygulama: sekmeler ve onların üstüne açılan ekranlar (profil). */
+/** Giriş yapılmış uygulama: sekmeler ve onların üstüne açılan ekranlar (profil, kaynak oynatıcısı, kaynak ekleme). */
 export default function AppLayout() {
   const { colors } = useTheme();
   return (
@@ -16,6 +16,8 @@ export default function AppLayout() {
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="profil" options={{ title: "Profil", headerBackTitle: "Geri" }} />
+      <Stack.Screen name="kaynak/[id]" options={{ title: "Konu Anlatımı", headerBackTitle: "Geri" }} />
+      <Stack.Screen name="kaynak-ekle" options={{ title: "Kaynak ekle", presentation: "modal", headerBackTitle: "Geri" }} />
     </Stack>
   );
 }

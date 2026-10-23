@@ -147,11 +147,4 @@ export async function fetchPlaylistVideoIds(listId: string, timeoutMs = 15000): 
   }
 }
 
-/** 754 → "12:34", 3725 → "1:02:05" */
-export function formatDuration(totalSec: number): string {
-  const h = Math.floor(totalSec / 3600);
-  const m = Math.floor((totalSec % 3600) / 60);
-  const s = Math.floor(totalSec % 60);
-  const mm = h ? String(m).padStart(2, "0") : String(m);
-  return `${h ? `${h}:` : ""}${mm}:${String(s).padStart(2, "0")}`;
-}
+export { formatDuration } from "@unicoach/shared";

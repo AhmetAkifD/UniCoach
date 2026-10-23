@@ -13,9 +13,17 @@ interface DialogOptions {
   danger?: boolean;
 }
 
+interface PromptOptions {
+  placeholder?: string;
+  secure?: boolean;
+  /** Kutunun ilk değeri (ör. yeniden adlandırmada şu anki ad) */
+  defaultValue?: string;
+  maxLength?: number;
+}
+
 type Request =
   | (DialogOptions & { kind: "confirm" | "alert"; resolve: (ok: boolean) => void })
-  | (DialogOptions & { kind: "prompt"; placeholder?: string; secure?: boolean; resolve: (value: string | null) => void });
+  | (DialogOptions & PromptOptions & { kind: "prompt"; resolve: (value: string | null) => void });
 
 /**
  * Uygulama içi onay/soru pencereleri (web'deki useDialog ile aynı kullanım). React Native'in Alert'i
@@ -32,7 +40,7 @@ export function useDialog() {
     [],
   );
   const prompt = useCallback(
-    (o: DialogOptions & { placeholder?: string; secure?: boolean }) =>
+    (o: DialogOptions & PromptOptions) =>
       new Promise<string | null>((resolve) => setRequest({ ...o, kind: "prompt", resolve })),
     [],
   );
@@ -51,7 +59,7 @@ export function useDialog() {
 
 function DialogView({ request, onDone }: { request: Request; onDone: (value: boolean | string | null) => void }) {
   const { colors } = useTheme();
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState(request.kind === "prompt" ? (request.defaultValue ?? "") : "");
   const cancel = () => onDone(request.kind === "prompt" ? null : request.kind === "alert");
   const submit = () => onDone(request.kind === "prompt" ? value.trim() || null : true);
   return (
@@ -84,6 +92,7 @@ function DialogView({ request, onDone }: { request: Request; onDone: (value: boo
               onChangeText={setValue}
               placeholder={request.placeholder ?? request.title}
               secureTextEntry={request.secure}
+              maxLength={request.maxLength}
               autoCapitalize="none"
               onSubmitEditing={submit}
             />
