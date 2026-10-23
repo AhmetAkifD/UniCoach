@@ -96,6 +96,20 @@ export interface BookSummary {
   updatedAt: string;
 }
 
+const topicCollator = new Intl.Collator("tr-TR", { sensitivity: "base", numeric: true });
+
+/** Önceden kullanılan konu etiketleri, alfabetik (yükleme ve düzenlemede öneri olarak). */
+export function bookTopics(books: Pick<BookSummary, "topic">[]): string[] {
+  return [...new Set(books.flatMap((b) => (b.topic ? [b.topic] : [])))].sort(topicCollator.compare);
+}
+
+/** Dersin PDF'leri konu etiketine göre ayrılır; konusuzlar en sonda. Hiç konu yoksa tek grup döner. */
+export function groupByTopic<T extends Pick<BookSummary, "topic">>(books: T[]): [string | null, T[]][] {
+  const topics = new Map<string | null, T[]>();
+  for (const book of books) topics.set(book.topic, [...(topics.get(book.topic) ?? []), book]);
+  return [...topics.entries()].sort(([a], [b]) => (a === null ? 1 : b === null ? -1 : topicCollator.compare(a, b)));
+}
+
 /** Bayt → "148,6 MB" (1024 tabanı). */
 export function formatBytes(bytes: number): string {
   const units = ["B", "KB", "MB", "GB"];
