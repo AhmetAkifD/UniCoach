@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 import { fonts, useTheme } from "@/lib/theme";
 
-/** Giriş yapılmış uygulama: sekmeler ve onların üstüne açılan ekranlar (profil, kaynak oynatıcısı, kaynak ekleme, PDF görüntüleyici, PDF yükleme, soru çıkarma). */
+/** Giriş yapılmış uygulama: sekmeler ve onların üstüne açılan ekranlar (profil, kaynak oynatıcısı, kaynak ekleme, PDF görüntüleyici, PDF yükleme, soru çıkarma, sınav, yeni sınav). */
 export default function AppLayout() {
   const { colors } = useTheme();
   return (
@@ -20,6 +20,9 @@ export default function AppLayout() {
       <Stack.Screen name="kaynak-ekle" options={{ title: "Kaynak ekle", presentation: "modal", headerBackTitle: "Geri" }} />
       <Stack.Screen name="pdf/[id]" options={{ title: "Soru Bankası", headerBackTitle: "Geri" }} />
       <Stack.Screen name="sorular/[id]" options={{ title: "Soruları çıkar", headerBackTitle: "Geri" }} />
+      <Stack.Screen name="sinav/[id]" options={{ title: "Sınav", headerBackTitle: "Geri" }} />
+      <Stack.Screen name="sinav-incele/[id]" options={{ title: "Gözden geçir", headerBackTitle: "Geri" }} />
+      <Stack.Screen name="sinav-yeni" options={{ title: "Yeni sınav", presentation: "modal", headerBackTitle: "Geri" }} />
       <Stack.Screen name="pdf-yukle" options={{ title: "PDF yükle", presentation: "modal", headerBackTitle: "Geri" }} />
     </Stack>
   );

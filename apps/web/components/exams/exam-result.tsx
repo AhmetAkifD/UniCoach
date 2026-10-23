@@ -4,7 +4,15 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, CircleAlert, Loader2, Pencil, RotateCcw, Trash2 } from "lucide-react";
-import { ApiError, examNet, formatNet, type ExamDetail, type ExamQuestion } from "@unicoach/shared";
+import {
+  ApiError,
+  EXAM_OUTCOME_LABELS as OUTCOME_LABEL,
+  examOutcome as outcomeOf,
+  examSectionResults,
+  examUsedMs,
+  formatNet,
+  type ExamDetail,
+} from "@unicoach/shared";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -16,11 +24,6 @@ import { formatDate, formatMinutes } from "@/lib/exam-format";
 import { QuestionImage, usePdf } from "./question-image";
 
 type Filter = "all" | "wrong" | "blank" | "correct";
-type Outcome = "correct" | "wrong" | "blank";
-
-const outcomeOf = (q: ExamQuestion): Outcome => (!q.answer ? "blank" : q.answer === q.correctAnswer ? "correct" : "wrong");
-
-const OUTCOME_LABEL: Record<Outcome, string> = { correct: "Doğru", wrong: "Yanlış", blank: "Boş" };
 const OUTCOME_TONE = { correct: "success", wrong: "danger", blank: "neutral" } as const;
 
 /** Sonuç: net, doğru/yanlış/boş, test bazında döküm ve soruların gözden geçirilmesi. */
@@ -42,20 +45,12 @@ export function ExamResult({ exam }: { exam: ExamDetail }) {
       .then(() => window.location.replace(`/sinavlar/${exam.id}`));
   }, [returning, exam.id]);
 
-  const sections = useMemo(() => {
-    const names = [...new Set(exam.questions.map((q) => q.section))];
-    return names.map((name) => {
-      const list = exam.questions.filter((q) => q.section === name);
-      const correct = list.filter((q) => outcomeOf(q) === "correct").length;
-      const wrong = list.filter((q) => outcomeOf(q) === "wrong").length;
-      return { name, count: list.length, correct, wrong, blank: list.length - correct - wrong, net: examNet(correct, wrong, exam.track) };
-    });
-  }, [exam]);
+  const sections = useMemo(() => examSectionResults(exam), [exam]);
 
   const counts = { all: exam.questions.length, wrong: exam.wrong ?? 0, blank: exam.blank ?? 0, correct: exam.correct ?? 0 };
   const shown = exam.questions.filter((q) => filter === "all" || outcomeOf(q) === filter);
   // Duraklatılarak geçen süre harcanan süreye sayılmaz.
-  const used = Date.parse(exam.finishedAt!) - Date.parse(exam.startedAt) - exam.pausedSec * 1000;
+  const used = examUsedMs(exam);
 
   function retake() {
     setError(null);

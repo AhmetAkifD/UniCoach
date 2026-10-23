@@ -58,7 +58,13 @@ export default function Home() {
         <Text tone="textMuted">Bugün hangi konuya çalışmak istersin? Küçük adımlar, büyük netler.</Text>
       </View>
 
-      <Card style={{ gap: spacing[2] }}>
+      {/* Son biten sınav varsa kart sonucunu açar. */}
+      <PressableCard
+        disabled={!lastExam}
+        accessibilityLabel={lastExam ? `Son deneme: ${lastExam.title}, ${formatNet(lastExam.net ?? 0)} net` : "Son deneme yok"}
+        onPress={() => lastExam && router.push({ pathname: "/sinav/[id]", params: { id: lastExam.id } })}
+        style={{ gap: spacing[2] }}
+      >
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
           <Text size="sm" weight="medium" tone="textMuted">
             Son deneme
@@ -71,7 +77,7 @@ export default function Home() {
         <Text size="sm" tone="textMuted">
           {lastExam ? `${lastExam.title} · ${lastExam.correct} D, ${lastExam.wrong} Y` : "Henüz deneme çözmedin."}
         </Text>
-      </Card>
+      </PressableCard>
 
       <Card style={{ gap: spacing[3], alignItems: "center", paddingVertical: spacing[8] }}>
         <BookOpenCheck size={32} color={colors.textSubtle} strokeWidth={1.75} />

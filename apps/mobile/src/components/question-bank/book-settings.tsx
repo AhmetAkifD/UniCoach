@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { View } from "react-native";
 import { router } from "expo-router";
-import { ListChecks, Pencil, Trash2 } from "lucide-react-native";
+import { ClipboardList, ListChecks, Pencil, Trash2 } from "lucide-react-native";
 import { spacing } from "@unicoach/design";
 import { ApiError, findSubject, formatBytes, type BookSummary, type ExamTrack } from "@unicoach/shared";
 import { SubjectSelect } from "@/components/library/subject-select";
@@ -115,6 +115,18 @@ export function BookSettings({
         >
           {book.questionCount ? `Soruları düzenle (${book.questionCount})` : "Soruları çıkar"}
         </Button>
+        {book.questionCount > 0 && (
+          <Button
+            variant="secondary"
+            icon={<ClipboardList size={18} color={colors.primarySoftText} />}
+            onPress={() => {
+              onClose();
+              router.push({ pathname: "/sinav-yeni", params: { pdf: book.id } });
+            }}
+          >
+            Sınav oluştur
+          </Button>
+        )}
 
         <View style={{ gap: spacing[4] }}>
           <View style={{ gap: 6 }}>
