@@ -9,3 +9,4 @@ export * from "./yks-result";
 export * from "./programs";
 export * from "./preferences";
 export * from "./notebooks";
+export * from "./subject-filters";

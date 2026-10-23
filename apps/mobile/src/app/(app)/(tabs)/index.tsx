@@ -1,11 +1,11 @@
 import { useCallback, useState } from "react";
 import { RefreshControl, ScrollView, View } from "react-native";
-import { useFocusEffect } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { BookOpenCheck, TrendingUp } from "lucide-react-native";
 import { formatNet, type ExamSummary } from "@unicoach/shared";
 import { layout, radius, spacing } from "@unicoach/design";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+import { Card, PressableCard } from "@/components/ui/card";
 import { Text } from "@/components/ui/text";
 import { api } from "@/lib/api";
 import { modules } from "@/lib/modules";
@@ -87,8 +87,15 @@ export default function Home() {
         </Text>
         {modules.map((m) => {
           const Icon = m.icon;
+          // Mobilde hazır modülün kartı sekmesini açar.
+          const Container = m.ready && m.route ? PressableCard : Card;
+          const route = m.route;
           return (
-            <Card key={m.title} style={{ flexDirection: "row", gap: spacing[4], alignItems: "flex-start" }}>
+            <Container
+              key={m.title}
+              onPress={m.ready && route ? () => router.navigate(`/${route}`) : undefined}
+              style={{ flexDirection: "row", gap: spacing[4], alignItems: "flex-start" }}
+            >
               <View style={{ width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.primarySoft, alignItems: "center", justifyContent: "center" }}>
                 <Icon size={20} color={colors.primarySoftText} strokeWidth={1.75} />
               </View>
@@ -101,7 +108,7 @@ export default function Home() {
                 </Text>
                 {!m.ready && <Badge tone="primary">Mobilde yakında</Badge>}
               </View>
-            </Card>
+            </Container>
           );
         })}
       </View>

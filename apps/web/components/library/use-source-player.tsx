@@ -1,7 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ApiError, type ProgressInput, type SourceDetail, type SourceItem } from "@unicoach/shared";
+import {
+  ApiError,
+  firstUnwatched,
+  startSeconds,
+  type ProgressInput,
+  type SourceDetail,
+  type SourceItem,
+} from "@unicoach/shared";
 import { browserApi } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { loadPlayerPrefs } from "@/lib/player-prefs";
@@ -12,18 +19,6 @@ import { VideoControls } from "./video-controls";
 const SAVE_INTERVAL_MS = 10_000;
 /** Tam ekranda fare hareketsiz kalınca kontrol paneli bu sürede gizlenir. */
 const CONTROLS_HIDE_MS = 2_500;
-
-/** Kaldığı yerden başlatma: izlenmiş videolar baştan, yarım kalanlar kaldığı saniyeden. */
-function startSeconds(item: SourceItem): number {
-  if (item.watchedAt || item.positionSec < 5) return 0;
-  if (item.durationSec && item.positionSec > item.durationSec - 5) return 0;
-  return item.positionSec;
-}
-
-function firstUnwatched(items: SourceItem[]): number {
-  const i = items.findIndex((it) => !it.watchedAt);
-  return i === -1 ? 0 : i;
-}
 
 /**
  * Bir kaynağın (video ya da oynatma listesi) oynatıcısı: YouTube iframe'i, kendi kontrol şeridimiz, tam ekran,

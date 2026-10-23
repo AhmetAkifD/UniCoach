@@ -17,7 +17,7 @@ export const modules: ModuleInfo[] = [
     title: "Konu Anlatımı",
     description: "Takip ettiğin YouTube videoları ve oynatma listeleri. Nerede kaldığını unutma.",
     icon: PlaySquare,
-    ready: false,
+    ready: true,
   },
   {
     route: "soru-bankasi",

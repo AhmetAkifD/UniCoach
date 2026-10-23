@@ -88,6 +88,15 @@ export const PLAYLIST_MAX_ITEMS = 200;
 /** Videonun bu oranı izlenince "izlendi" sayılır (bitiş ekranını beklemeyenler için). */
 export const WATCHED_THRESHOLD = 0.9;
 
+/** 754 → "12:34", 3725 → "1:02:05" */
+export function formatDuration(totalSec: number): string {
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = Math.floor(totalSec % 60);
+  const mm = h ? String(m).padStart(2, "0") : String(m);
+  return `${h ? `${h}:` : ""}${mm}:${String(s).padStart(2, "0")}`;
+}
+
 export const SOURCE_KINDS = ["VIDEO", "PLAYLIST"] as const;
 export type SourceKind = (typeof SOURCE_KINDS)[number];
 
@@ -194,4 +203,17 @@ export interface SourceItem {
 
 export interface SourceDetail extends SourceSummary {
   items: SourceItem[];
+}
+
+/** Kaldığı yerden başlatma: izlenmiş videolar baştan, yarım kalanlar kaldığı saniyeden. */
+export function startSeconds(item: SourceItem): number {
+  if (item.watchedAt || item.positionSec < 5) return 0;
+  if (item.durationSec && item.positionSec > item.durationSec - 5) return 0;
+  return item.positionSec;
+}
+
+/** Kaynak açılınca ilk izlenmemiş videodan başlanır (hepsi izlendiyse baştan). */
+export function firstUnwatched(items: SourceItem[]): number {
+  const i = items.findIndex((it) => !it.watchedAt);
+  return i === -1 ? 0 : i;
 }
