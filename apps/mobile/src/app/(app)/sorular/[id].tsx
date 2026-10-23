@@ -10,9 +10,12 @@ import { Text } from "@/components/ui/text";
 import { api } from "@/lib/api";
 import { useTheme } from "@/lib/theme";
 
-/** Soruları çıkar ve cevap anahtarını düzenle (web'deki /soru-bankasi/[id]/sorular); PDF ekranının üstüne açılır. */
+/**
+ * Soruları çıkar ve cevap anahtarını düzenle (web'deki /soru-bankasi/[id]/sorular); PDF ekranının üstüne açılır.
+ * `?soru=<id>`: sınavdan "Kaynağında düzenle" ile gelindi, o soru açılıp seçilir (geri dönünce sınav sürer).
+ */
 export default function QuestionsScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, soru } = useLocalSearchParams<{ id: string; soru?: string }>();
   const { colors } = useTheme();
   const [data, setData] = useState<{ book: BookSummary; questions: BookQuestion[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -51,5 +54,5 @@ export default function QuestionsScreen() {
       </View>
     );
   }
-  return <QuestionEditor book={data.book} initial={data.questions} />;
+  return <QuestionEditor book={data.book} initial={data.questions} focusId={soru} />;
 }

@@ -64,7 +64,17 @@ type Panel = "question" | "tests" | "methods" | null;
  * sayfa, kutular, metin katmanı ve OCR WebView'deki sayfada (lib/question-editor-page.ts). Sorular burada tutulur,
  * "Kaydet" ile hepsi birden gönderilir (kayıtlı soruların kimliği korunur).
  */
-export function QuestionEditor({ book, initial }: { book: BookSummary; initial: BookQuestion[] }) {
+export function QuestionEditor({
+  book,
+  initial,
+  focusId,
+}: {
+  book: BookSummary;
+  initial: BookQuestion[];
+  /** Sınavdan "Kaynağında düzenle" ile gelindiyse açılıp seçilecek soru */
+  focusId?: string;
+}) {
+  const focus = initial.find((q) => q.id === focusId);
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
@@ -74,10 +84,10 @@ export function QuestionEditor({ book, initial }: { book: BookSummary; initial: 
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [pageCount, setPageCount] = useState(book.pageCount ?? 0);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(focus?.page ?? 1);
   const [questions, setQuestions] = useState<Q[]>(() => initial.map(({ id, ...q }) => ({ ...q, key: id })));
   const [dirty, setDirty] = useState(false);
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(focus?.id ?? null);
   const [busy, setBusy] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<EditorNotice | null>(null);
@@ -110,7 +120,7 @@ export function QuestionEditor({ book, initial }: { book: BookSummary; initial: 
       questionEditorHtml({
         url: api.books.filePath(book.id),
         token: getApiToken(),
-        page: 1,
+        page: focus?.page ?? 1,
         background: colors.surfaceMuted,
         colors: { primary: colors.primary, info: colors.info, danger: colors.danger, onPrimary: colors.onPrimary },
       }),

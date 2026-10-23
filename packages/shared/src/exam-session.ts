@@ -102,3 +102,67 @@ export interface ExamDetail extends ExamSummary {
   /** Sunucu saati: geri sayım istemci saatinden bağımsız olsun diye. */
   now: string;
 }
+
+// --- Biçimlendirme (web ve mobil) ---
+
+/** Geri sayım: 1:05:09 ya da 05:09 */
+export function formatClock(ms: number): string {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const mm = String(m).padStart(2, "0");
+  const ss = String(s).padStart(2, "0");
+  return h ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+}
+
+/** Süre metni: "1 sa 5 dk", "42 dk", "40 sn" */
+export function formatMinutes(ms: number): string {
+  const totalMin = Math.round(ms / 60000);
+  if (ms < 60000) return `${Math.max(0, Math.round(ms / 1000))} sn`;
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return h ? `${h} sa${m ? ` ${m} dk` : ""}` : `${m} dk`;
+}
+
+const dateFormat = new Intl.DateTimeFormat("tr-TR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+
+/** "21 Ekim 14:05" */
+export function formatDate(iso: string): string {
+  return dateFormat.format(new Date(iso));
+}
+
+// --- Sonuç ---
+
+export type ExamOutcome = "correct" | "wrong" | "blank";
+export const EXAM_OUTCOME_LABELS: Record<ExamOutcome, string> = { correct: "Doğru", wrong: "Yanlış", blank: "Boş" };
+
+export const examOutcome = (q: Pick<ExamQuestion, "answer" | "correctAnswer">): ExamOutcome =>
+  !q.answer ? "blank" : q.answer === q.correctAnswer ? "correct" : "wrong";
+
+/** Test bazında döküm (sonuç tablosu). */
+export function examSectionResults(exam: Pick<ExamDetail, "questions" | "track">) {
+  const names = [...new Set(exam.questions.map((q) => q.section))];
+  return names.map((name) => {
+    const list = exam.questions.filter((q) => q.section === name);
+    const correct = list.filter((q) => examOutcome(q) === "correct").length;
+    const wrong = list.filter((q) => examOutcome(q) === "wrong").length;
+    return { name, count: list.length, correct, wrong, blank: list.length - correct - wrong, net: examNet(correct, wrong, exam.track) };
+  });
+}
+
+/** Harcanan süre (ms); duraklatılarak geçen süre sayılmaz. */
+export const examUsedMs = (exam: Pick<ExamSummary, "startedAt" | "finishedAt" | "pausedSec">) =>
+  Date.parse(exam.finishedAt!) - Date.parse(exam.startedAt) - exam.pausedSec * 1000;
+
+/** Sınavın şu an kalan süresi (ms); süresizse null. `offsetMs`: sunucu saati − cihaz saati. */
+export function examRemainingMs(clock: { deadline: string | null; pausedAt: string | null }, offsetMs = 0): number | null {
+  if (!clock.deadline) return null;
+  return Date.parse(clock.deadline) - (clock.pausedAt ? Date.parse(clock.pausedAt) : Date.now() + offsetMs);
+}
+
+/** Yarıda bırakılan sınav ilk boş sorudan başlar. */
+export function firstBlankIndex(questions: Pick<ExamQuestion, "answer">[]) {
+  const i = questions.findIndex((q) => !q.answer);
+  return i < 0 ? 0 : i;
+}
