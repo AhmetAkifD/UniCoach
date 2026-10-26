@@ -189,6 +189,8 @@ export interface SourceSummary {
   /** Liste 200 videoda kesilmiş olabilir. */
   truncated: boolean;
   createdAt: string;
+  /** Son ilerleme kaydı (izlenen ya da yarım kalan bir videonun son değişikliği); hiç izlenmediyse null. */
+  lastStudiedAt: string | null;
 }
 
 export interface SourceItem {
@@ -210,6 +212,62 @@ export function startSeconds(item: SourceItem): number {
   if (item.watchedAt || item.positionSec < 5) return 0;
   if (item.durationSec && item.positionSec > item.durationSec - 5) return 0;
   return item.positionSec;
+}
+
+export interface SubjectProgress {
+  subject: string;
+  label: string;
+  watched: number;
+  total: number;
+  /** 0–100 */
+  percent: number;
+  lastStudiedAt: string | null;
+}
+
+export interface LibraryProgress {
+  watched: number;
+  total: number;
+  /** 0–100, yuvarlanmış */
+  percent: number;
+  /** Derslere göre; en son çalışılan önce, hiç çalışılmayanlar ders sırasıyla sonda. */
+  subjects: SubjectProgress[];
+  /** "Kaldığın yerden devam et": en son çalışılan, bitmemiş kaynak (yoksa en son çalışılan). */
+  resume: SourceSummary | null;
+}
+
+const pct = (watched: number, total: number) => (total ? Math.round((watched / total) * 100) : 0);
+const later = (a: string | null, b: string | null) => (!a ? b : !b ? a : a > b ? a : b);
+
+/** Ana sayfadaki "Konu ilerlemen" kartı (web ve mobil): Konu Anlatımı kaynaklarından özet. */
+export function libraryProgress(sources: SourceSummary[]): LibraryProgress {
+  const bySubject = new Map<string, SubjectProgress>();
+  for (const s of sources) {
+    const cur = bySubject.get(s.subject) ?? {
+      subject: s.subject,
+      label: findSubject(s.subject)?.label ?? s.subject,
+      watched: 0,
+      total: 0,
+      percent: 0,
+      lastStudiedAt: null,
+    };
+    cur.watched += s.watchedCount;
+    cur.total += s.itemCount;
+    cur.lastStudiedAt = later(cur.lastStudiedAt, s.lastStudiedAt);
+    bySubject.set(s.subject, cur);
+  }
+  const order = (id: string) => SUBJECTS.findIndex((x) => x.id === id);
+  const subjects = [...bySubject.values()]
+    .map((p) => ({ ...p, percent: pct(p.watched, p.total) }))
+    .sort((a, b) =>
+      a.lastStudiedAt || b.lastStudiedAt
+        ? (b.lastStudiedAt ?? "").localeCompare(a.lastStudiedAt ?? "")
+        : order(a.subject) - order(b.subject),
+    );
+  const studied = sources.filter((s) => s.lastStudiedAt).sort((a, b) => b.lastStudiedAt!.localeCompare(a.lastStudiedAt!));
+  const resume = studied.find((s) => s.watchedCount < s.itemCount) ?? studied[0] ?? null;
+  const watched = sources.reduce((n, s) => n + s.watchedCount, 0);
+  const total = sources.reduce((n, s) => n + s.itemCount, 0);
+  return { watched, total, percent: pct(watched, total), subjects, resume };
 }
 
 /** Kaynak açılınca ilk izlenmemiş videodan başlanır (hepsi izlendiyse baştan). */

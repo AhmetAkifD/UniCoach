@@ -1,9 +1,10 @@
 import { useCallback, useState } from "react";
 import { RefreshControl, ScrollView, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
-import { BookOpenCheck, TrendingUp } from "lucide-react-native";
-import { formatNet, type ExamSummary } from "@unicoach/shared";
+import { TrendingUp } from "lucide-react-native";
+import { formatNet, type ExamSummary, type SourceSummary } from "@unicoach/shared";
 import { layout, radius, spacing } from "@unicoach/design";
+import { TopicProgressCard } from "@/components/library/topic-progress-card";
 import { Badge } from "@/components/ui/badge";
 import { Card, PressableCard } from "@/components/ui/card";
 import { Text } from "@/components/ui/text";
@@ -12,22 +13,21 @@ import { modules } from "@/lib/modules";
 import { useSession } from "@/lib/session";
 import { useTheme } from "@/lib/theme";
 
-/** Ana sayfa: selam, son deneme, konu ilerlemesi (henüz boş) ve modüller — web ana sayfasının mobil karşılığı. */
+/** Ana sayfa: selam, son deneme, konu ilerlemesi ve modüller — web ana sayfasının mobil karşılığı. */
 export default function Home() {
   const { user } = useSession();
   const { colors } = useTheme();
   const [lastExam, setLastExam] = useState<ExamSummary | null>(null);
+  const [sources, setSources] = useState<SourceSummary[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
-    try {
-      setLastExam((await api.exams.list()).find((e) => e.finishedAt) ?? null);
-    } catch {
-      setLastExam(null);
-    }
+    const [exams, list] = await Promise.all([api.exams.list().catch(() => null), api.sources.list().catch(() => null)]);
+    setLastExam(exams?.find((e) => e.finishedAt) ?? null);
+    setSources(list);
   }, []);
 
-  // Sekmeye her dönüşte (ör. web'de deneme çözüldükten sonra) yenilenir.
+  // Sekmeye her dönüşte (ör. deneme çözülüp video izlendikten sonra) yenilenir.
   useFocusEffect(
     useCallback(() => {
       void load();
@@ -79,13 +79,7 @@ export default function Home() {
         </Text>
       </PressableCard>
 
-      <Card style={{ gap: spacing[3], alignItems: "center", paddingVertical: spacing[8] }}>
-        <BookOpenCheck size={32} color={colors.textSubtle} strokeWidth={1.75} />
-        <Text weight="semibold">Konu ilerlemen</Text>
-        <Text size="sm" tone="textMuted" style={{ textAlign: "center" }}>
-          Konu anlatımlarını izleyip soru çözdükçe ilerlemen burada görünecek.
-        </Text>
-      </Card>
+      <TopicProgressCard sources={sources} />
 
       <View style={{ gap: spacing[4] }}>
         <Text size="xl" weight="semibold">
