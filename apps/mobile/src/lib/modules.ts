@@ -45,6 +45,6 @@ export const modules: ModuleInfo[] = [
     title: "YKS Tercih",
     description: "Puanını ekle, taban puan ve başarı sırasına göre programları keşfet, listeni oluştur.",
     icon: GraduationCap,
-    ready: false,
+    ready: true,
   },
 ];

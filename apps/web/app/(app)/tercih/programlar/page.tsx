@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, ListOrdered } from "lucide-react";
 import { buttonClasses } from "@/components/ui/button";
-import type { ResultScoreType } from "@unicoach/shared";
+import { placementRanks } from "@unicoach/shared";
 import { ProgramExplorer } from "@/components/tercih/program-explorer";
 import { authedApi, requireUser } from "@/lib/session";
 
@@ -13,8 +13,7 @@ export default async function ProgramsPage() {
   const [options, results, list] = await Promise.all([api.programs.filters(), api.results.list(), api.preferences.list()]);
   // En yeni sonucun yerleştirme sıraları karşılaştırmada kullanılır.
   const latest = results[0] ?? null;
-  const ranks: Partial<Record<ResultScoreType, number>> = {};
-  for (const s of latest?.scores ?? []) if (s.placementRank) ranks[s.type] = s.placementRank;
+  const ranks = placementRanks(latest);
 
   return (
     <div className="flex flex-col gap-8">

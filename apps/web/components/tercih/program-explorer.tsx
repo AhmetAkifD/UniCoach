@@ -20,9 +20,14 @@ import {
   SCHOLARSHIPS,
   UNIVERSITY_TYPE_LABELS,
   UNIVERSITY_TYPES,
+  EMPTY_PROGRAM_FILTERS,
+  defaultProgramScoreType,
+  nearRankRange,
+  programGroupOptions,
+  programMetaLine,
+  type ProgramFilters,
   type ProgramFilterOptions,
   type ProgramPage,
-  type ProgramSearchInput,
   type ProgramSource,
   type ResultScoreType,
   type YksScore,
@@ -39,20 +44,8 @@ import { ProgramYears } from "./program-years";
 
 const PAGE_SIZE = 25;
 
-type Filters = Omit<ProgramSearchInput, "source" | "page" | "size">;
-
-const EMPTY: Filters = {
-  scoreType: null,
-  universityIds: [],
-  groupIds: [],
-  cityCodes: [],
-  level: null,
-  universityType: null,
-  scholarshipId: null,
-  educationTypeId: null,
-  minRank: null,
-  maxRank: null,
-};
+type Filters = ProgramFilters;
+const EMPTY = EMPTY_PROGRAM_FILTERS;
 
 function Select<T extends string | number>({
   label,
@@ -128,7 +121,7 @@ export function ProgramExplorer({
 }) {
   const [options, setOptions] = useState(initialOptions);
   const [source, setSource] = useState<ProgramSource>(initialOptions.snapshot ? "local" : "live");
-  const defaultType = (RESULT_SCORE_TYPES.filter((t) => t !== "TYT").find((t) => ranks[t]) ?? null) as ResultScoreType | null;
+  const defaultType = defaultProgramScoreType(ranks);
   const [filters, setFilters] = useState<Filters>({ ...EMPTY, scoreType: defaultType });
   const [page, setPage] = useState(0);
   const [result, setResult] = useState<ProgramPage | null>(null);
@@ -194,14 +187,7 @@ export function ProgramExplorer({
     setOptions((o) => ({ ...o, syncing: true }));
   }
 
-  const groups = useMemo(
-    () =>
-      options.groups
-        .filter((g) => !filters.scoreType || g.scoreType === filters.scoreType)
-        .map((g) => ({ value: g.id, label: filters.scoreType ? g.name : `${g.name} (${RESULT_SCORE_CODES[g.scoreType]})` }))
-        .filter((g, i, list) => list.findIndex((x) => x.value === g.value) === i),
-    [options.groups, filters.scoreType],
-  );
+  const groups = useMemo(() => programGroupOptions(options.groups, filters.scoreType), [options.groups, filters.scoreType]);
   const myRank = filters.scoreType ? ranks[filters.scoreType] : undefined;
   const snapshot = options.snapshot;
 
@@ -303,7 +289,7 @@ export function ProgramExplorer({
                 variant="secondary"
                 size="sm"
                 onClick={() => {
-                  setFilters((f) => ({ ...f, minRank: Math.max(1, Math.round(myRank * 0.7)), maxRank: Math.round(myRank * 1.5) }));
+                  setFilters((f) => ({ ...f, ...nearRankRange(myRank) }));
                   setPage(0);
                 }}
               >
@@ -431,9 +417,7 @@ export function ProgramExplorer({
                           <span className="font-medium">{p.name}</span>
                           <span className="text-text-muted">{p.universityName}</span>
                           <span className="text-xs text-text-subtle">
-                            {[p.faculty, p.cityName, UNIVERSITY_TYPE_LABELS[p.universityType], p.scholarship, p.educationType !== "Örgün Öğretim" ? p.educationType : null, RESULT_SCORE_CODES[p.scoreType], `Kod ${p.code}`]
-                              .filter(Boolean)
-                              .join(" · ")}
+                            {programMetaLine(p)}
                           </span>
                           {cmp && (
                             <Badge tone={cmp.tone} className="self-start">
