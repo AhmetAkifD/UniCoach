@@ -26,6 +26,7 @@ export default function AppLayout() {
       <Stack.Screen name="tercih-programlar" options={{ title: "Programlar", headerBackTitle: "Geri" }} />
       <Stack.Screen name="tercih-liste" options={{ title: "Tercih listem", headerBackTitle: "Geri" }} />
       <Stack.Screen name="sinav-yeni" options={{ title: "Yeni sınav", presentation: "modal", headerBackTitle: "Geri" }} />
+      <Stack.Screen name="calisma-alani" options={{ title: "Çalışma Alanı", headerBackTitle: "Geri" }} />
       <Stack.Screen name="pdf-yukle" options={{ title: "PDF yükle", presentation: "modal", headerBackTitle: "Geri" }} />
     </Stack>
   );

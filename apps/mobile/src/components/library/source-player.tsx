@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AppState, FlatList, Pressable, View, type FlatListProps } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { FlatList, Pressable, View, type FlatListProps } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Check, ChevronDown, ChevronUp, CircleCheck, Pencil, Play, Trash2, TriangleAlert, X } from "lucide-react-native";
 import { layout, radius, spacing } from "@unicoach/design";
@@ -7,11 +7,8 @@ import {
   ApiError,
   PLAYLIST_MAX_ITEMS,
   findSubject,
-  firstUnwatched,
   formatDuration,
-  startSeconds,
   type ExamTrack,
-  type ProgressInput,
   type SourceDetail,
   type SourceItem,
   type SourceSummary,
@@ -22,17 +19,13 @@ import { Text } from "@/components/ui/text";
 import { useDialog } from "@/components/ui/use-dialog";
 import { api } from "@/lib/api";
 import { useTheme } from "@/lib/theme";
-import { PlayerState, type YouTubeEvent, type YouTubeFrameHandle } from "@/lib/youtube";
 import { SubjectSelect } from "./subject-select";
+import { useSourcePlayer } from "./use-source-player";
 import { YouTubeFrame } from "./youtube-frame";
-
-/** Oynarken ilerleme bu aralıkla kaydedilir (web'deki useSourcePlayer ile aynı). */
-const SAVE_INTERVAL_MS = 10_000;
 
 /**
  * Bir kaynağın oynatıcısı (web'deki SourcePlayer): üstte video, altında başlık, ayarlar ve video listesi.
- * İlerleme web'deki kurallarla kaydedilir: oynarken 10 sn'de bir, duraklatınca, video değişince, uygulama arka plana
- * geçince ve ekrandan çıkınca; video bitince izlendi işaretlenip sıradakine geçilir (%90 kuralı API'de).
+ * Oynatma ve ilerleme kaydı `useSourcePlayer`da (Çalışma Alanı da kullanır).
  */
 export function SourcePlayer({
   source,
@@ -55,105 +48,8 @@ export function SourcePlayer({
 }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const [items, setItems] = useState(source.items);
-  const [current, setCurrent] = useState(() => firstUnwatched(source.items));
-  const [error, setError] = useState<string>();
-
-  const frameRef = useRef<YouTubeFrameHandle>(null);
+  const { frameRef, initial, onEvent, items, current, playIndex, toggleWatched, error, setError } = useSourcePlayer(source, onFullscreenChange);
   const listRef = useRef<FlatList<SourceItem>>(null);
-  const itemsRef = useRef(items);
-  const currentRef = useRef(current);
-  itemsRef.current = items;
-  currentRef.current = current;
-  /** Oynatıcının son bildirdiği konum (sayfa saniyede bir gönderir). */
-  const timeRef = useRef({ time: startSeconds(items[current]!), duration: 0 });
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const initial = useMemo(() => ({ videoId: items[current]!.videoId, start: startSeconds(items[current]!) }), []);
-
-  const save = useCallback(
-    async (item: SourceItem, input: ProgressInput) => {
-      try {
-        const updated = await api.sources.saveProgress(source.id, item.id, input);
-        setItems((prev) => prev.map((it) => (it.id === updated.id ? updated : it)));
-      } catch (err) {
-        setError(err instanceof ApiError ? err.message : "İlerleme kaydedilemedi.");
-      }
-    },
-    [source.id],
-  );
-
-  /** Oynatıcının o anki konumunu kaydeder. */
-  const saveCurrent = useCallback(
-    (extra?: Partial<ProgressInput>) => {
-      const item = itemsRef.current[currentRef.current];
-      if (!item) return;
-      const positionSec = Math.floor(timeRef.current.time);
-      const duration = Math.floor(timeRef.current.duration);
-      if (positionSec === 0 && !extra?.watched) return;
-      void save(item, { positionSec, ...(duration > 0 && { durationSec: duration }), ...extra });
-    },
-    [save],
-  );
-
-  const stopTimer = () => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = null;
-  };
-
-  const playIndex = useCallback(
-    (index: number) => {
-      const item = itemsRef.current[index];
-      if (!item) return;
-      if (index !== currentRef.current) saveCurrent();
-      stopTimer();
-      setCurrent(index);
-      currentRef.current = index;
-      const start = startSeconds(item);
-      timeRef.current = { time: start, duration: 0 };
-      frameRef.current?.load(item.videoId, start);
-    },
-    [saveCurrent],
-  );
-
-  function onEvent(event: YouTubeEvent) {
-    if (event.type === "error") return setError(event.message);
-    if (event.type === "fullscreen") return onFullscreenChange?.(event.on);
-    if (event.type === "time") {
-      timeRef.current = { time: event.time, duration: event.duration };
-      return;
-    }
-    if (event.type !== "state") return;
-    timeRef.current = { time: event.time, duration: event.duration };
-    if (event.state === PlayerState.PLAYING) {
-      stopTimer();
-      timerRef.current = setInterval(() => saveCurrent(), SAVE_INTERVAL_MS);
-    } else if (event.state === PlayerState.PAUSED) {
-      stopTimer();
-      saveCurrent();
-    } else if (event.state === PlayerState.ENDED) {
-      stopTimer();
-      saveCurrent({ watched: true });
-      const next = currentRef.current + 1;
-      if (next < itemsRef.current.length) playIndex(next);
-    }
-  }
-
-  // Uygulama arka plana geçince video durur (YouTube arka planda oynatmaya izin vermez) ve konum kaydedilir;
-  // ekrandan çıkınca da son konum kaydedilir.
-  useEffect(() => {
-    const sub = AppState.addEventListener("change", (state) => {
-      if (state === "active") return;
-      frameRef.current?.pause();
-      saveCurrent();
-    });
-    return () => {
-      sub.remove();
-      stopTimer();
-      saveCurrent();
-    };
-  }, [saveCurrent]);
 
   // Sıradaki videoya geçilince satırı görünmüyorsa listeyi ona kaydır (ilk açılışta başlık görünür kalsın diye kaydırılmaz).
   const visibleRef = useRef(new Set<number>());
@@ -208,12 +104,7 @@ export function SourcePlayer({
             size="sm"
             icon={<CircleCheck size={16} color={currentItem.watchedAt ? colors.primarySoftText : colors.text} />}
             style={{ alignSelf: "flex-start", marginLeft: currentItem.watchedAt ? 0 : -spacing[3] }}
-            onPress={() =>
-              void save(currentItem, {
-                positionSec: Math.floor(timeRef.current.time) || currentItem.positionSec,
-                watched: !currentItem.watchedAt,
-              })
-            }
+            onPress={() => toggleWatched(currentItem)}
           >
             {currentItem.watchedAt ? "İzlendi" : "İzlendi olarak işaretle"}
           </Button>
@@ -277,7 +168,7 @@ export function SourcePlayer({
               index={index}
               active={index === current}
               onPlay={() => playIndex(index)}
-              onToggle={() => void save(item, { positionSec: item.positionSec, watched: !item.watchedAt })}
+              onToggle={() => toggleWatched(item)}
             />
           )}
         />

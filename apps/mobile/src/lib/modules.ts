@@ -1,8 +1,8 @@
 import { BookOpenText, ClipboardList, GraduationCap, NotebookPen, PlaySquare, type LucideIcon } from "lucide-react-native";
 
 export interface ModuleInfo {
-  /** Sekme adı (src/app/(app) altındaki dosya); sekmesi olmayan modülde null */
-  route: "konular" | "soru-bankasi" | "sinavlar" | "tercih" | null;
+  /** Açılan ekran (src/app/(app) altındaki dosya; Çalışma Alanı dışındakiler sekme) */
+  route: "konular" | "soru-bankasi" | "calisma-alani" | "sinavlar" | "tercih" | null;
   title: string;
   description: string;
   icon: LucideIcon;
@@ -27,11 +27,11 @@ export const modules: ModuleInfo[] = [
     ready: true,
   },
   {
-    route: null,
+    route: "calisma-alani",
     title: "Çalışma Alanı",
     description: "Videonu izlerken PDF'inden çalış, defterine kalemle ya da klavyeyle not al.",
     icon: NotebookPen,
-    ready: false,
+    ready: true,
   },
   {
     route: "sinavlar",
