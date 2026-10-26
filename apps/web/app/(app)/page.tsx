@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { ArrowRight, BookOpenCheck, CircleCheck, CircleAlert, Flame, Target, TrendingUp } from "lucide-react";
-import { formatNet, type ExamSummary, type HealthResponse } from "@unicoach/shared";
+import { ArrowRight, CircleCheck, CircleAlert, Flame, Target, TrendingUp } from "lucide-react";
+import { formatNet, type ExamSummary, type HealthResponse, type SourceSummary } from "@unicoach/shared";
+import { TopicProgressCard } from "@/components/library/topic-progress-card";
 import { Badge } from "@/components/ui/badge";
 import { buttonClasses } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -26,9 +27,18 @@ async function getLastExam(): Promise<ExamSummary | null> {
   }
 }
 
+/** Konu Anlatımı kaynakları ("Konu ilerlemen" kartı); API'ye ulaşılamazsa null. */
+async function getSources(): Promise<SourceSummary[] | null> {
+  try {
+    return await (await authedApi()).sources.list();
+  } catch {
+    return null;
+  }
+}
+
 export default async function HomePage() {
   // Layout oturumu zaten doğruladı; getSession istek başına önbelleklenir.
-  const [user, health, lastExam] = await Promise.all([getSession(), getHealth(), getLastExam()]);
+  const [user, health, lastExam, sources] = await Promise.all([getSession(), getHealth(), getLastExam(), getSources()]);
   const firstName = user?.firstName ?? "";
 
   return (
@@ -61,16 +71,7 @@ export default async function HomePage() {
       </section>
 
       <section className="grid gap-4 lg:grid-cols-3">
-        <Card className="flex flex-col gap-4 lg:col-span-2">
-          <h2 className="text-lg font-semibold">Konu ilerlemen</h2>
-          <div className="flex flex-1 flex-col items-center justify-center gap-2 py-8 text-center">
-            <BookOpenCheck className="size-8 text-text-subtle" strokeWidth={1.75} aria-hidden />
-            <p className="font-medium">Henüz ilerleme yok</p>
-            <p className="max-w-sm text-sm text-text-muted">
-              Konu anlatımlarını izleyip soru çözdükçe ilerlemen burada görünecek.
-            </p>
-          </div>
-        </Card>
+        <TopicProgressCard sources={sources} />
 
         <Card className="flex flex-col gap-3">
           <h2 className="text-lg font-semibold">Sistem durumu</h2>

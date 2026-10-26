@@ -29,7 +29,14 @@ export class SourcesService {
       _count: { _all: true },
     });
     const watchedBySource = new Map(watched.map((w) => [w.sourceId, w._count._all]));
-    return sources.map((s) => toSummary(s, s._count.items, watchedBySource.get(s.id) ?? 0));
+    // Son çalışma: izlenen ya da yarım kalan videoların son değişikliği (yeni eklenen videolar sayılmaz).
+    const studied = await this.prisma.sourceItem.groupBy({
+      by: ["sourceId"],
+      where: { source: { userId }, OR: [{ watchedAt: { not: null } }, { positionSec: { gt: 0 } }] },
+      _max: { updatedAt: true },
+    });
+    const studiedBySource = new Map(studied.map((s) => [s.sourceId, s._max.updatedAt]));
+    return sources.map((s) => toSummary(s, s._count.items, watchedBySource.get(s.id) ?? 0, studiedBySource.get(s.id) ?? null));
   }
 
   async get(userId: string, id: string): Promise<SourceDetail> {
@@ -39,7 +46,10 @@ export class SourcesService {
     });
     if (!source) throw new NotFoundException("Kaynak bulunamadı.");
     const watchedCount = source.items.filter((i) => i.watchedAt).length;
-    return { ...toSummary(source, source.items.length, watchedCount), items: source.items.map(toItem) };
+    const lastStudied = source.items
+      .filter((i) => i.watchedAt || i.positionSec > 0)
+      .reduce<Date | null>((max, i) => (!max || i.updatedAt > max ? i.updatedAt : max), null);
+    return { ...toSummary(source, source.items.length, watchedCount, lastStudied), items: source.items.map(toItem) };
   }
 
   async create(userId: string, input: CreateSourceInput): Promise<SourceSummary> {
@@ -74,7 +84,7 @@ export class SourcesService {
           },
         },
       });
-      return toSummary(source, videoIds.length, 0);
+      return toSummary(source, videoIds.length, 0, null);
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
         throw new ConflictException("Bu kaynak zaten kütüphanende.");
@@ -122,7 +132,7 @@ export class SourcesService {
   }
 }
 
-function toSummary(source: Source, itemCount: number, watchedCount: number): SourceSummary {
+function toSummary(source: Source, itemCount: number, watchedCount: number, lastStudiedAt: Date | null): SourceSummary {
   return {
     id: source.id,
     subject: source.subject,
@@ -135,6 +145,7 @@ function toSummary(source: Source, itemCount: number, watchedCount: number): Sou
     watchedCount,
     truncated: source.truncated,
     createdAt: source.createdAt.toISOString(),
+    lastStudiedAt: lastStudiedAt?.toISOString() ?? null,
   };
 }
 
