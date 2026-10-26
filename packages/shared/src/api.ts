@@ -43,6 +43,7 @@ import type {
   NotePageRef,
   SaveNotePageInput,
 } from "./notebooks";
+import type { SyncPullResponse } from "./sync";
 
 export const USER_ROLES = ["STUDENT", "ADMIN"] as const;
 export type UserRole = (typeof USER_ROLES)[number];
@@ -207,6 +208,10 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       /** Sayfa kaydının adresi (sayfadan çıkarken keepalive ile göndermek için) */
       pagePath: (id: string, pageId: string) =>
         `${baseUrl}/api/notebooks/${encodeURIComponent(id)}/pages/${encodeURIComponent(pageId)}`,
+    },
+    /** Cihazlar arası eşitleme (mobil çevrimdışı kopya) */
+    sync: {
+      pull: (since: number) => request<SyncPullResponse>(`/sync/pull?since=${since}`, { cache: "no-store" }),
     },
   };
 }

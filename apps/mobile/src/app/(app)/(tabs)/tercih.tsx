@@ -13,6 +13,7 @@ import { useDialog } from "@/components/ui/use-dialog";
 import { api } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { useTheme } from "@/lib/theme";
+import { useSyncRefresh } from "@/lib/sync";
 
 /** YKS Tercih: kayıtlı sonuçlar, sonuç ekleme ve programlara/tercih listesine geçiş (web'deki /tercih). */
 export default function TercihScreen() {
@@ -32,6 +33,8 @@ export default function TercihScreen() {
     }
   }, []);
 
+  // Arka planda eşitleme veriyi değiştirince (ör. web'de yapılan değişiklik) yeniden okunur.
+  useSyncRefresh(() => void load());
   useFocusEffect(
     useCallback(() => {
       void load();

@@ -13,6 +13,7 @@ import { api } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { subjectColor } from "@/lib/subject-color";
 import { useTheme } from "@/lib/theme";
+import { useSyncRefresh } from "@/lib/sync";
 
 /** Konu Anlatımı: öğrencinin YouTube kütüphanesi, derslere göre gruplu (web'deki /konular). */
 export default function LibraryScreen() {
@@ -32,6 +33,8 @@ export default function LibraryScreen() {
     }
   }, []);
 
+  // Arka planda eşitleme veriyi değiştirince (ör. web'de yapılan değişiklik) yeniden okunur.
+  useSyncRefresh(() => void load());
   // Sekmeye her dönüşte (kaynak ekleyip ya da video izleyip gelince) ilerleme yenilenir.
   useFocusEffect(
     useCallback(() => {

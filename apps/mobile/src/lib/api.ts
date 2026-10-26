@@ -1,6 +1,7 @@
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 import { createApiClient } from "@unicoach/shared";
+import { createLocalLayer } from "./local";
 
 /**
  * API adresi. Öncelik `EXPO_PUBLIC_API_URL` (ör. http://192.168.1.10:4000). Yoksa geliştirmede Expo'nun
@@ -24,5 +25,14 @@ export const setApiToken = (value: string | null) => {
 };
 export const getApiToken = () => token;
 
-/** Mobil, çerez yerine `Authorization: Bearer` ile kimlik doğrular. */
-export const api = createApiClient({ baseUrl: API_BASE_URL, getToken: () => token });
+/** Mobil, çerez yerine `Authorization: Bearer` ile kimlik doğrular. Doğrudan sunucu (oturum işleri için). */
+export const remoteApi = createApiClient({ baseUrl: API_BASE_URL, getToken: () => token });
+
+const layer = createLocalLayer(remoteApi);
+/**
+ * Ekranların kullandığı istemci: telefonda okumalar yerel kopyadan (lib/local), yazmalar sunucuya. Web önizlemesinde
+ * doğrudan sunucu.
+ */
+export const api = layer.api;
+/** Yerel kopyayı sunucuyla eşitleyen motor (lib/sync.tsx bunu ekranlara bağlar). */
+export const syncEngine = layer.engine;

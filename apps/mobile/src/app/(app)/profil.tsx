@@ -16,6 +16,7 @@ import {
 } from "@unicoach/shared";
 import { spacing } from "@unicoach/design";
 import { PasswordChecklist } from "@/components/password-checklist";
+import { SyncStatusCard } from "@/components/sync-status";
 import { UserAvatar } from "@/components/user-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -58,6 +59,9 @@ export default function Profile() {
         <Card style={{ gap: spacing[6] }}>
           <PreferenceForm user={user} onSaved={refresh} />
         </Card>
+      </Section>
+      <Section title="Bu cihazdaki veriler">
+        <SyncStatusCard />
       </Section>
       <Button variant="secondary" icon={<LogOut size={18} color={colors.primarySoftText} />} onPress={() => void signOut()}>
         Çıkış yap

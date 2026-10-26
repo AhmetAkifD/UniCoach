@@ -21,26 +21,26 @@ enum ExamTrack {
 }
 
 model User {
-  id           String     @id @default(cuid())
-  email        String     @unique
-  firstName    String
-  lastName     String
-  passwordHash String
-  role         UserRole   @default(STUDENT)
+  id              String         @id @default(cuid())
+  email           String         @unique
+  firstName       String
+  lastName        String
+  passwordHash    String
+  role            UserRole       @default(STUDENT)
   /// Kayıtta seçilir; eski hesaplarda boş olabilir.
-  examTrack    ExamTrack?
+  examTrack       ExamTrack?
   /// "system" | "light" | "dark" (packages/shared → THEMES)
-  theme        String     @default("system")
+  theme           String         @default("system")
   /// Profil fotoğrafı yüklendiyse son yükleme anı; dosya UPLOAD_DIR/avatars/<id>.jpg
   avatarUpdatedAt DateTime?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  sources      Source[]
-  books        QuestionBook[]
-  exams        Exam[]
-  yksResults   YksResult[]
-  preferences  Preference[]
-  notebooks    Notebook[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  sources         Source[]
+  books           QuestionBook[]
+  exams           Exam[]
+  yksResults      YksResult[]
+  preferences     Preference[]
+  notebooks       Notebook[]
 }
 
 enum SourceKind {
@@ -68,9 +68,12 @@ model Source {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
   items        SourceItem[]
+  /// Eşitleme sayacı: her ekleme/değişiklikte veritabanı tetikleyicisi verir (packages/shared → sync.ts)
+  syncVersion  BigInt       @default(0)
 
   @@unique([userId, kind, youtubeId])
   @@index([userId, subject])
+  @@index([syncVersion])
 }
 
 /// Kaynaktaki tek video. Aynı video bir listede birden çok kez geçebilir; bu yüzden sıra numarasıyla ayrılır.
@@ -88,67 +91,76 @@ model SourceItem {
   positionSec Int       @default(0)
   watchedAt   DateTime?
   updatedAt   DateTime  @updatedAt
+  /// Eşitleme sayacı: her ekleme/değişiklikte veritabanı tetikleyicisi verir (packages/shared → sync.ts)
+  syncVersion BigInt    @default(0)
 
   @@unique([sourceId, position])
+  @@index([syncVersion])
 }
 
 /// Soru Bankası: öğrencinin yüklediği soru kitabı PDF'i. Dosya diskte (UPLOAD_DIR/books/<id>.pdf) durur.
 /// Yalnızca yükleyen öğrenciye görünür.
 model QuestionBook {
-  id         String    @id @default(cuid())
-  userId     String
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String         @id @default(cuid())
+  userId       String
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   /// packages/shared → SUBJECTS kimliği
-  subject    String
+  subject      String
   /// Başta dosya adıdır; öğrenci değiştirebilir.
-  title      String
+  title        String
   /// Serbest konu etiketi (isteğe bağlı)
-  topic      String?
-  sizeBytes  Int
+  topic        String?
+  sizeBytes    Int
   /// PDF ilk kez açılınca görüntüleyici bildirir.
-  pageCount  Int?
+  pageCount    Int?
   /// Kalınan sayfa (1'den başlar)
-  lastPage   Int       @default(1)
+  lastPage     Int            @default(1)
   /// Soru çıkarma ayarları (öğrenci seçer): "auto" | "text" | "ocr"
-  detectMethod String    @default("auto")
+  detectMethod String         @default("auto")
   /// Cevap anahtarının yeri: "auto" | "lastPages" | "pageBottom" | "none"
-  keyMethod    String    @default("auto")
+  keyMethod    String         @default("auto")
   /// Dosya tamamen yüklenince dolar; boşsa kayıt listede görünmez.
-  uploadedAt DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  questions  BookQuestion[]
-  exams      Exam[]
+  uploadedAt   DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  questions    BookQuestion[]
+  exams        Exam[]
+  /// Eşitleme sayacı: her ekleme/değişiklikte veritabanı tetikleyicisi verir (packages/shared → sync.ts)
+  syncVersion  BigInt         @default(0)
 
   @@index([userId, subject])
+  @@index([syncVersion])
 }
 
 /// PDF'ten çıkarılmış soru: metni değil, sayfadaki yeri (PDF noktası, sol üstten) ve cevabı saklanır.
 model BookQuestion {
-  id          String       @id @default(cuid())
-  bookId      String
-  book        QuestionBook @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  id            String         @id @default(cuid())
+  bookId        String
+  book          QuestionBook   @relation(fields: [bookId], references: [id], onDelete: Cascade)
   /// Test/bölüm adı; numara bölüm içinde tekildir.
-  section     String
-  number      Int
-  page        Int
-  x           Float
-  y           Float
-  w           Float
-  h           Float
-  choiceCount Int          @default(5)
+  section       String
+  number        Int
+  page          Int
+  x             Float
+  y             Float
+  w             Float
+  h             Float
+  choiceCount   Int            @default(5)
   /// "A"–"E"; bilinmiyorsa boş
-  answer      String?
+  answer        String?
   /// Şık metinleri (öneri; metin katmanı ya da OCR)
-  choices     String[]
+  choices       String[]
   /// Kaydedilme sırası (PDF'teki sıra)
-  position    Int
+  position      Int
   examQuestions ExamQuestion[]
+  /// Eşitleme sayacı: her ekleme/değişiklikte veritabanı tetikleyicisi verir (packages/shared → sync.ts)
+  syncVersion   BigInt         @default(0)
 
   /// Bir testte aynı numara olmaz; kural API'de (zod) denetlenir. Kayıtta kimlikler korunduğu için
   /// numaraların yer değiştirmesi ara adımda çakışmasın diye veritabanında tekil kısıt yoktur.
   @@index([bookId, section, number])
   @@index([bookId, position])
+  @@index([syncVersion])
 }
 
 /// Geçmiş Sınavlar: Soru Bankası'ndan seçilen testlerle kurulan süreli deneme.
@@ -177,8 +189,11 @@ model Exam {
   blank       Int?
   net         Float?
   questions   ExamQuestion[]
+  /// Eşitleme sayacı: her ekleme/değişiklikte veritabanı tetikleyicisi verir (packages/shared → sync.ts)
+  syncVersion BigInt         @default(0)
 
   @@index([userId, startedAt])
+  @@index([syncVersion])
 }
 
 /// Sınavdaki soru: kaynak sorunun o anki kopyası (yer + doğru cevap) ve öğrencinin cevabı.
@@ -201,8 +216,11 @@ model ExamQuestion {
   correctAnswer  String
   answer         String?
   answeredAt     DateTime?
+  /// Eşitleme sayacı: her ekleme/değişiklikte veritabanı tetikleyicisi verir (packages/shared → sync.ts)
+  syncVersion    BigInt        @default(0)
 
   @@unique([examId, position])
+  @@index([syncVersion])
 }
 
 /// YKS Tercih: öğrencinin bir yılın YKS sonucu. Belgeden okunur ya da elle girilir; kimlik bilgisi saklanmaz.
@@ -221,14 +239,17 @@ model YksResult {
   tests        Json
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  /// Eşitleme sayacı: her ekleme/değişiklikte veritabanı tetikleyicisi verir (packages/shared → sync.ts)
+  syncVersion  BigInt   @default(0)
 
   @@unique([userId, year])
+  @@index([syncVersion])
 }
 
 /// YKS Tercih: YÖK Atlas tercih kılavuzundan indirilen program. Her indirmede tablo baştan yazılır.
 model Program {
   /// ÖSYM program kodu (kılavuz kodu)
-  code            Int      @id
+  code            Int     @id
   /// Taban puan ve sıranın yılı
   year            Int
   universityId    Int
@@ -296,34 +317,56 @@ model Preference {
   /// Eklendiği andaki program (packages/shared → ProgramSummary); indirilmiş veride yoksa bu gösterilir
   snapshot    Json
   addedAt     DateTime @default(now())
+  /// Eşitleme sayacı: her ekleme/değişiklikte veritabanı tetikleyicisi verir (packages/shared → sync.ts)
+  syncVersion BigInt   @default(0)
 
   @@unique([userId, programCode])
   @@index([userId, position])
+  @@index([syncVersion])
 }
 
 /// Çalışma alanı: öğrencinin not defteri. Yalnızca sahibine görünür.
 model Notebook {
-  id        String         @id @default(cuid())
-  userId    String
-  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title     String
-  createdAt DateTime       @default(now())
+  id          String         @id @default(cuid())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  createdAt   DateTime       @default(now())
   /// Bir sayfası kaydedilince de güncellenir (listede son çalışılan defter üstte).
-  updatedAt DateTime       @updatedAt
-  pages     NotebookPage[]
+  updatedAt   DateTime       @updatedAt
+  pages       NotebookPage[]
+  /// Eşitleme sayacı: her ekleme/değişiklikte veritabanı tetikleyicisi verir (packages/shared → sync.ts)
+  syncVersion BigInt         @default(0)
 
   @@index([userId, updatedAt])
+  @@index([syncVersion])
 }
 
 /// Defter sayfası: kalem/marker çizgileri ve metin kutuları (packages/shared → NotePageContent).
 model NotebookPage {
-  id         String   @id @default(cuid())
-  notebookId String
-  notebook   Notebook @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+  id          String   @id @default(cuid())
+  notebookId  String
+  notebook    Notebook @relation(fields: [notebookId], references: [id], onDelete: Cascade)
   /// 1'den başlar, boşluksuz
-  position   Int
-  content    Json
-  updatedAt  DateTime @updatedAt
+  position    Int
+  content     Json
+  updatedAt   DateTime @updatedAt
+  /// Eşitleme sayacı: her ekleme/değişiklikte veritabanı tetikleyicisi verir (packages/shared → sync.ts)
+  syncVersion BigInt   @default(0)
 
   @@index([notebookId, position])
+  @@index([syncVersion])
+}
+
+/// Eşitleme: silinen satırların izi (telefon silindiğini buradan öğrenir). Silme tetikleyicisi yazar; üst satırla
+/// birlikte (cascade) silinen alt satırlar yazılmaz, telefon onları üst satırla birlikte siler.
+model SyncTombstone {
+  id          BigInt @id @default(autoincrement())
+  /// packages/shared → SyncTable
+  table       String
+  rowId       String
+  userId      String
+  syncVersion BigInt
+
+  @@index([userId, syncVersion])
 }

@@ -12,6 +12,7 @@ import { api } from "@/lib/api";
 import { modules } from "@/lib/modules";
 import { useSession } from "@/lib/session";
 import { useTheme } from "@/lib/theme";
+import { useSyncRefresh } from "@/lib/sync";
 
 /** Ana sayfa: selam, son deneme, konu ilerlemesi ve modüller — web ana sayfasının mobil karşılığı. */
 export default function Home() {
@@ -27,6 +28,8 @@ export default function Home() {
     setSources(list);
   }, []);
 
+  // Arka planda eşitleme veriyi değiştirince (ör. web'de yapılan değişiklik) yeniden okunur.
+  useSyncRefresh(() => void load());
   // Sekmeye her dönüşte (ör. deneme çözülüp video izlendikten sonra) yenilenir.
   useFocusEffect(
     useCallback(() => {

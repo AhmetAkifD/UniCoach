@@ -1,6 +1,7 @@
-import { Pressable, type ColorValue } from "react-native";
+import { Pressable, View, type ColorValue } from "react-native";
 import { Tabs, router } from "expo-router";
 import { BookOpenText, ClipboardList, GraduationCap, House, PlaySquare, type LucideIcon } from "lucide-react-native";
+import { OfflineIndicator } from "@/components/sync-status";
 import { UserAvatar } from "@/components/user-avatar";
 import { useSession } from "@/lib/session";
 import { fonts, useTheme } from "@/lib/theme";
@@ -22,15 +23,18 @@ export default function AppLayout() {
         headerTintColor: colors.text,
         headerRight: () =>
           user ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Profil"
-              onPress={() => router.push("/profil")}
-              style={{ marginRight: 16 }}
-              hitSlop={8}
-            >
-              <UserAvatar user={user} size={34} />
-            </Pressable>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <OfflineIndicator />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Profil"
+                onPress={() => router.push("/profil")}
+                style={{ marginRight: 16 }}
+                hitSlop={8}
+              >
+                <UserAvatar user={user} size={34} />
+              </Pressable>
+            </View>
           ) : null,
         tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border },
         tabBarActiveTintColor: colors.primary,

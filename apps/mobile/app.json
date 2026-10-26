@@ -33,7 +33,8 @@
         {
           "photosPermission": "Profil fotoğrafı seçmek için fotoğraflarına erişmemize izin ver."
         }
-      ]
+      ],
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true
