@@ -9,8 +9,7 @@ import {
   preferenceWarnings,
   comparisonYear,
   rankComparison,
-  RESULT_SCORE_CODES,
-  UNIVERSITY_TYPE_LABELS,
+  programMetaLine,
   type PreferenceItem,
   type YksScore,
 } from "@unicoach/shared";
@@ -145,9 +144,7 @@ export function PreferenceList({
                     <span className="font-semibold leading-snug">{p.name}</span>
                     <span className="text-sm text-text-muted">{p.universityName}</span>
                     <span className="text-xs text-text-subtle">
-                      {[p.faculty, p.cityName, UNIVERSITY_TYPE_LABELS[p.universityType], p.scholarship, RESULT_SCORE_CODES[p.scoreType], `Kod ${p.code}`]
-                        .filter(Boolean)
-                        .join(" · ")}
+                      {programMetaLine(p, false)}
                     </span>
                   </div>
                   <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm tabular-nums">

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { RESULT_SCORE_TYPES, type ResultScoreType } from "./yks-result";
+import { RESULT_SCORE_CODES, RESULT_SCORE_TYPES, type ResultScoreType, type YksResult } from "./yks-result";
 
 /**
  * YKS Tercih: üniversite programları (taban puan, başarı sırası, kontenjan). Kaynak YÖK Atlas'ın tercih kılavuzu
@@ -132,3 +132,58 @@ export interface ProgramFilterOptions {
 
 /** YÖK Atlas puan türü yazımı ("SÖZ") ↔ bizim kimlik ("SOZ") */
 export const ATLAS_SCORE_TYPE: Record<ResultScoreType, string> = { TYT: "TYT", SAY: "SAY", SOZ: "SÖZ", EA: "EA", DIL: "DİL" };
+
+// --- Program arama ekranı (web ve mobil) ---
+
+/** Arama filtreleri (kaynak ve sayfa hariç) */
+export type ProgramFilters = Omit<ProgramSearchInput, "source" | "page" | "size">;
+
+export const EMPTY_PROGRAM_FILTERS: ProgramFilters = {
+  scoreType: null,
+  universityIds: [],
+  groupIds: [],
+  cityCodes: [],
+  level: null,
+  universityType: null,
+  scholarshipId: null,
+  educationTypeId: null,
+  minRank: null,
+  maxRank: null,
+};
+
+/** Öğrencinin puan türü başına yerleştirme sırası (en yeni sonucundan); karşılaştırmada kullanılır. */
+export function placementRanks(result: Pick<YksResult, "scores"> | null | undefined): Partial<Record<ResultScoreType, number>> {
+  const ranks: Partial<Record<ResultScoreType, number>> = {};
+  for (const s of result?.scores ?? []) if (s.placementRank) ranks[s.type] = s.placementRank;
+  return ranks;
+}
+
+/** Aramanın ilk puan türü: TYT dışında sırası olan ilk tür. */
+export const defaultProgramScoreType = (ranks: Partial<Record<ResultScoreType, number>>): ResultScoreType | null =>
+  RESULT_SCORE_TYPES.filter((t) => t !== "TYT").find((t) => ranks[t]) ?? null;
+
+/** "Sırama yakın olanlar": sıranın %70'i ile %150'si arası */
+export const nearRankRange = (rank: number) => ({ minRank: Math.max(1, Math.round(rank * 0.7)), maxRank: Math.round(rank * 1.5) });
+
+/** Program kartındaki ayrıntı satırı: fakülte · şehir · tür · burs · (örgün değilse öğretim türü) · puan türü · kod */
+export function programMetaLine(p: ProgramSummary, withEducationType = true): string {
+  return [
+    p.faculty,
+    p.cityName,
+    UNIVERSITY_TYPE_LABELS[p.universityType],
+    p.scholarship,
+    withEducationType && p.educationType !== "Örgün Öğretim" ? p.educationType : null,
+    RESULT_SCORE_CODES[p.scoreType],
+    `Kod ${p.code}`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+/** Program grupları seçeneği: puan türü seçiliyse yalnızca o türünkiler; değilse adın yanında tür kodu. */
+export function programGroupOptions(groups: ProgramFilterOptions["groups"], scoreType: ResultScoreType | null) {
+  return groups
+    .filter((g) => !scoreType || g.scoreType === scoreType)
+    .map((g) => ({ value: g.id, label: scoreType ? g.name : `${g.name} (${RESULT_SCORE_CODES[g.scoreType]})` }))
+    .filter((g, i, list) => list.findIndex((x) => x.value === g.value) === i);
+}

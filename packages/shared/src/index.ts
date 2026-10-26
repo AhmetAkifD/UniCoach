@@ -12,3 +12,4 @@ export * from "./notebooks";
 export * from "./subject-filters";
 export * from "./question-detect";
 export * from "./question-editing";
+export * from "./yks-result-form";
