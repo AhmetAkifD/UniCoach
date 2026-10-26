@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Platform, View, useWindowDimensions } from "react-native";
+import { ActivityIndicator, Platform, Pressable, View, useWindowDimensions } from "react-native";
 import { Stack, router, useLocalSearchParams } from "expo-router";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { StatusBar } from "expo-status-bar";
-import { TriangleAlert } from "lucide-react-native";
+import { NotebookPen, TriangleAlert } from "lucide-react-native";
 import { spacing } from "@unicoach/design";
 import { ApiError, type SourceDetail } from "@unicoach/shared";
 import { SourcePlayer } from "@/components/library/source-player";
@@ -96,7 +96,22 @@ export default function SourceScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: source.title, headerShown: !landscape }} />
+      <Stack.Screen
+        options={{
+          title: source.title,
+          headerShown: !landscape,
+          headerRight: () => (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Çalışma alanında aç"
+              onPress={() => router.push({ pathname: "/calisma-alani", params: { video: source.id } })}
+              hitSlop={10}
+            >
+              <NotebookPen size={22} color={colors.text} />
+            </Pressable>
+          ),
+        }}
+      />
       <StatusBar hidden={landscape} />
       <SourcePlayer
         fullscreen={landscape}

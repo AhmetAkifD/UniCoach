@@ -93,7 +93,7 @@ export default function Home() {
         </Text>
         {modules.map((m) => {
           const Icon = m.icon;
-          // Mobilde hazır modülün kartı sekmesini açar.
+          // Mobilde hazır modülün kartı ekranını açar (Çalışma Alanı dışındakiler sekme).
           const Container = m.ready && m.route ? PressableCard : Card;
           const route = m.route;
           return (
