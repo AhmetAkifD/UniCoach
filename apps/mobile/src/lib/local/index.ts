@@ -1,9 +1,12 @@
 import {
   ApiError,
   isEmptyNoteDiff,
+  saveBookQuestionsSchema,
+  updateBookSchema,
   NOTEBOOK_MAX_PAGES,
   notePageDiff,
   type ApiClient,
+  type BookSummary,
   type NotebookDetail,
   type NotePageRef,
   type SyncOp,
@@ -15,6 +18,16 @@ import type { SyncEngine } from "./types";
 import * as views from "./views";
 
 export type { Connection, SyncEngine, SyncState } from "./types";
+
+/** Sunucudaki doğrulamanın aynısı; hata alanlarıyla `ApiError` (formlar alan hatasını gösterir). */
+type SafeParse<T> = { success: true; data: T } | { success: false; error: { issues: { path: PropertyKey[]; message: string }[] } };
+function validate<T>(schema: { safeParse(input: unknown): SafeParse<T> }, input: unknown): T {
+  const result = schema.safeParse(input);
+  if (result.success) return result.data;
+  const errors: Record<string, string> = {};
+  for (const issue of result.error.issues) errors[String(issue.path[0] ?? "")] ??= issue.message;
+  throw new ApiError(400, result.error.issues[0]?.message ?? "Geçersiz bilgi.", errors);
+}
 
 /** Telefonda üretilen kimlik (sunucudaki cuid'lerle karışmaz: zaman + rastgele). */
 const newId = () => `m${Date.now().toString(36)}${Math.random().toString(36).slice(2, 12)}`;
@@ -80,6 +93,12 @@ export function createLocalLayer(remote: ApiClient): { api: ApiClient; engine: S
     return out as T;
   }
 
+  const book = async (id: string): Promise<BookSummary> => {
+    const found = await views.getBook(id);
+    if (!found) throw new ApiError(404, "PDF bulunamadı.");
+    return found;
+  };
+
   const notebook = async (id: string): Promise<NotebookDetail> => {
     const detail = await views.getNotebook(id);
     if (!detail) throw new ApiError(404, "Defter bulunamadı.");
@@ -106,9 +125,19 @@ export function createLocalLayer(remote: ApiClient): { api: ApiClient; engine: S
       questions: (id) => list(() => views.bookQuestions(id)),
       saveProgress: async (bookId, input) => {
         await change({ type: "bookProgress", bookId, ...input, at: new Date().toISOString() });
-        const book = await views.getBook(bookId);
-        if (!book) throw new ApiError(404, "PDF bulunamadı.");
-        return book;
+        return book(bookId);
+      },
+      update: async (bookId, input) => {
+        await change({ type: "bookUpdate", bookId, patch: validate(updateBookSchema, input) });
+        return book(bookId);
+      },
+      // Çevrimdışı da kaydedilir; yeni soruların kimliği burada üretilir (sunucu korur, sınavlar ona bağlanır).
+      saveQuestions: async (bookId, input) => {
+        await book(bookId);
+        const parsed = validate(saveBookQuestionsSchema, input);
+        const questions = parsed.questions.map((q) => ({ ...q, id: q.id ?? newId() }));
+        await change({ type: "bookQuestions", bookId, input: { questions } });
+        return views.bookQuestions(bookId);
       },
     },
     exams: {

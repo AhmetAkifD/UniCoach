@@ -69,6 +69,12 @@ export class SyncService {
         await this.books.saveProgress(userId, op.bookId, { page: op.page, pageCount: op.pageCount });
         return;
       }
+      case "bookUpdate":
+        await this.books.update(userId, op.bookId, op.patch);
+        return;
+      case "bookQuestions":
+        await this.books.saveQuestions(userId, op.bookId, op.input);
+        return;
       case "notebookCreate": {
         const existing = await p.notebook.findUnique({ where: { id: op.id }, select: { userId: true } });
         if (existing) {

@@ -26,6 +26,51 @@ export async function applyLocally(tx: Tx, op: SyncOp, at: string): Promise<void
       await putRow(tx, "books", { ...book, pageCount, lastPage: pageCount ? Math.min(op.page, pageCount) : op.page, updatedAt: at });
       return;
     }
+    case "bookUpdate": {
+      const book = await getRow(tx, "books", op.bookId);
+      if (!book) return;
+      const { title, subject, topic, detectMethod, keyMethod } = op.patch;
+      await putRow(tx, "books", {
+        ...book,
+        ...(title !== undefined && { title }),
+        ...(subject !== undefined && { subject }),
+        ...(topic !== undefined && { topic }),
+        ...(detectMethod !== undefined && { detectMethod }),
+        ...(keyMethod !== undefined && { keyMethod }),
+        updatedAt: at,
+      });
+      return;
+    }
+    case "bookQuestions": {
+      if (!(await getRow(tx, "books", op.bookId))) return;
+      const existing = new Map((await getChildren(tx, "bookQuestions", op.bookId)).map((q) => [q.id, q]));
+      const keep = new Set(op.input.questions.map((q) => q.id));
+      await deleteRows(
+        tx,
+        "bookQuestions",
+        [...existing.keys()].filter((id) => !keep.has(id)),
+      );
+      for (const [position, q] of op.input.questions.entries()) {
+        if (!q.id) continue;
+        await putRow(tx, "bookQuestions", {
+          id: q.id,
+          bookId: op.bookId,
+          section: q.section,
+          number: q.number,
+          page: q.page,
+          x: q.x,
+          y: q.y,
+          w: q.w,
+          h: q.h,
+          choiceCount: q.choiceCount,
+          answer: q.answer ?? null,
+          choices: q.choices.slice(0, q.choiceCount),
+          position,
+          syncVersion: existing.get(q.id)?.syncVersion ?? 0,
+        });
+      }
+      return;
+    }
     case "notebookCreate": {
       if (await getRow(tx, "notebooks", op.id)) return;
       await putRow(tx, "notebooks", { id: op.id, title: op.title, createdAt: at, updatedAt: at, syncVersion: 0 });
@@ -80,6 +125,10 @@ function outboxKey(op: SyncOp): string | undefined {
       return `sourceProgress:${op.itemId}`;
     case "bookProgress":
       return `bookProgress:${op.bookId}`;
+    case "bookUpdate":
+      return `bookUpdate:${op.bookId}`;
+    case "bookQuestions":
+      return `bookQuestions:${op.bookId}`;
     case "notebookRename":
       return `notebookRename:${op.id}`;
     case "pageEdit":
@@ -89,8 +138,11 @@ function outboxKey(op: SyncOp): string | undefined {
   }
 }
 
-const mergeOps = (previous: SyncOp, next: SyncOp): SyncOp =>
-  previous.type === "pageEdit" && next.type === "pageEdit" ? { ...next, diff: mergeNoteDiffs(previous.diff, next.diff) } : next;
+function mergeOps(previous: SyncOp, next: SyncOp): SyncOp {
+  if (previous.type === "pageEdit" && next.type === "pageEdit") return { ...next, diff: mergeNoteDiffs(previous.diff, next.diff) };
+  if (previous.type === "bookUpdate" && next.type === "bookUpdate") return { ...next, patch: { ...previous.patch, ...next.patch } };
+  return next;
+}
 
 /** Değişikliği yerel kopyaya uygular ve kuyruğa yazar (tek işlemde). */
 export async function record(tx: Tx, op: SyncOp, at: string) {

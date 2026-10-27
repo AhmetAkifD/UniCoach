@@ -2,7 +2,7 @@ import { z } from "zod";
 import { progressSchema } from "./library";
 import { notebookInputSchema, notePageDiffSchema, type NotePageContent } from "./notebooks";
 import type { ProgramSummary } from "./programs";
-import { bookProgressSchema } from "./question-bank";
+import { bookProgressSchema, saveBookQuestionsSchema, updateBookSchema } from "./question-bank";
 import type { YksScore, YksTest } from "./yks-result";
 
 /**
@@ -213,6 +213,10 @@ const at = z.iso.datetime();
 export const syncOpSchema = z.discriminatedUnion("type", [
   progressSchema.extend({ type: z.literal("sourceProgress"), sourceId: rowId, itemId: rowId, at }),
   bookProgressSchema.extend({ type: z.literal("bookProgress"), bookId: rowId, at }),
+  /** PDF'in adı, dersi, konusu, soru bulma yöntemleri */
+  z.object({ type: z.literal("bookUpdate"), bookId: rowId, patch: updateBookSchema }),
+  /** Çıkarılan soruların tamamı (düzenleyicinin "Kaydet"i; yeni soruların kimliğini telefon üretir) */
+  z.object({ type: z.literal("bookQuestions"), bookId: rowId, input: saveBookQuestionsSchema }),
   z.object({ type: z.literal("notebookCreate"), id: rowId, pageId: rowId, title: notebookInputSchema.shape.title }),
   z.object({ type: z.literal("notebookRename"), id: rowId, title: notebookInputSchema.shape.title }),
   z.object({ type: z.literal("notebookDelete"), id: rowId }),
