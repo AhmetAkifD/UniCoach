@@ -43,7 +43,7 @@ import type {
   NotePageRef,
   SaveNotePageInput,
 } from "./notebooks";
-import type { SyncPullResponse, SyncPushInput, SyncPushResponse } from "./sync";
+import type { PairResponse, SyncPullResponse, SyncPushInput, SyncPushResponse } from "./sync";
 
 export const USER_ROLES = ["STUDENT", "ADMIN"] as const;
 export type UserRole = (typeof USER_ROLES)[number];
@@ -74,14 +74,18 @@ export class ApiError extends Error {
 }
 
 export interface ApiClientOptions {
-  /** Örn. web sunucusunda "http://api:4000", tarayıcıda "" (aynı köken), mobilde "http://192.168.1.10:4000". */
-  baseUrl: string;
+  /**
+   * Örn. web sunucusunda "http://api:4000", tarayıcıda "" (aynı köken), mobilde "http://192.168.1.10:4000". İşlev
+   * verilirse her istekte okunur (mobilde adres eşlemeyle değişebilir).
+   */
+  baseUrl: string | (() => string);
   /** Giriş yapılmışsa oturum belirteci. */
   getToken?: () => string | null | undefined;
   fetch?: typeof fetch;
 }
 
 export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }: ApiClientOptions) {
+  const base = () => (typeof baseUrl === "function" ? baseUrl() : baseUrl);
   async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const headers = new Headers(init.headers);
     headers.set("Accept", "application/json");
@@ -89,7 +93,7 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
     const token = getToken?.();
     if (token) headers.set("Authorization", `Bearer ${token}`);
 
-    const res = await fetchImpl(`${baseUrl}/api${path}`, { ...init, headers });
+    const res = await fetchImpl(`${base()}/api${path}`, { ...init, headers });
     if (!res.ok) {
       const body = (await res.json().catch(() => null)) as Partial<ApiErrorBody> | null;
       const message = typeof body?.message === "string" ? body.message : res.statusText;
@@ -120,7 +124,11 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
        * web `fetch` ile (mobil kendi dosya API'siyle) `avatarPath` adresine `PUT` eder.
        */
       removeAvatar: () => send<AuthUser>("DELETE", "/auth/me/avatar"),
-      avatarPath: `${baseUrl}/api/auth/me/avatar`,
+      /** Telefonu eşlemek için oturum ve bilgisayarın yerel ağ adresleri (web Profil'deki QR kod) */
+      pair: () => post<PairResponse>("/auth/pair", {}),
+      get avatarPath() {
+        return `${base()}/api/auth/me/avatar`;
+      },
     },
     sources: {
       list: () => request<SourceSummary[]>("/sources", { cache: "no-store" }),
@@ -153,7 +161,7 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       saveQuestions: (id: string, input: SaveBookQuestionsInput) =>
         send<BookQuestion[]>("PUT", `/books/${encodeURIComponent(id)}/questions`, input),
       /** PDF dosyasının adresi (GET: indirme/Range ile okuma, PUT: yükleme). */
-      filePath: (id: string) => `${baseUrl}/api/books/${encodeURIComponent(id)}/file`,
+      filePath: (id: string) => `${base()}/api/books/${encodeURIComponent(id)}/file`,
     },
     /** Geçmiş Sınavlar: Soru Bankası'nda çıkarılan testlerden süreli deneme. */
     exams: {
@@ -207,7 +215,7 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
         send<NotebookDetail>("DELETE", `/notebooks/${encodeURIComponent(id)}/pages/${encodeURIComponent(pageId)}`),
       /** Sayfa kaydının adresi (sayfadan çıkarken keepalive ile göndermek için) */
       pagePath: (id: string, pageId: string) =>
-        `${baseUrl}/api/notebooks/${encodeURIComponent(id)}/pages/${encodeURIComponent(pageId)}`,
+        `${base()}/api/notebooks/${encodeURIComponent(id)}/pages/${encodeURIComponent(pageId)}`,
     },
     /** Cihazlar arası eşitleme (mobil çevrimdışı kopya) */
     sync: {

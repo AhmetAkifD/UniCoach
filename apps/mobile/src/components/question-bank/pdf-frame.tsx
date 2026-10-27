@@ -2,7 +2,7 @@ import { useImperativeHandle, useMemo, useRef, type Ref } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
 import { type PageFrameHandle } from "@/components/page-frame";
 import { PdfPageFrame } from "@/components/pdf-page-frame";
-import { API_BASE_URL } from "@/lib/api";
+import { apiBaseUrl } from "@/lib/api";
 import { pdfjsAssets } from "@/lib/offline-files";
 import { pdfViewerHtml, type PdfEvent, type PdfFrameHandle, type PdfViewerConfig } from "@/lib/pdf-viewer";
 
@@ -30,7 +30,7 @@ export function PdfFrame({ ref, config, file, onEvent, style }: PdfFrameProps) {
       ref={frameRef}
       file={file}
       html={html}
-      baseUrl={`${API_BASE_URL}/`}
+      baseUrl={`${apiBaseUrl()}/`}
       background={config.background}
       onMessage={(m) => onEvent(m as PdfEvent)}
       style={style}

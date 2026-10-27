@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Pressable, View } from "react-native";
-import { CircleAlert, CircleCheck, GraduationCap, Pencil } from "lucide-react-native";
+import { router } from "expo-router";
+import { CircleAlert, CircleCheck, GraduationCap, Pencil, QrCode } from "lucide-react-native";
 import {
   ApiError,
   EXAM_TRACK_LABELS,
@@ -30,7 +31,7 @@ type Step = { name: "email" } | { name: "password"; email: string; notice?: stri
  *   e-posta → kayıtlıysa şifre → ana sayfa;  değilse kayıt (ad, soyad, şifre, sınav) → şifre → ana sayfa.
  */
 export default function SignIn() {
-  const { signIn } = useSession();
+  const { signIn, expired } = useSession();
   const { colors } = useTheme();
   const [step, setStep] = useState<Step>({ name: "email" });
   const [email, setEmail] = useState("");
@@ -112,6 +113,9 @@ export default function SignIn() {
           {step.name === "register" ? "Hesabını oluştur" : "UniCoach'a giriş yap"}
         </Text>
 
+        {expired && step.name === "email" && (
+          <Notice tone="danger">Oturumunun süresi doldu. Yeniden giriş yap ya da QR ile bağlan; bu telefondaki notların ve gönderilmemiş değişikliklerin silinmedi, aynı hesapla girince gönderilir.</Notice>
+        )}
         {step.name === "password" && step.notice && <Notice tone="success">{step.notice}</Notice>}
         {formError && <Notice tone="danger">{formError}</Notice>}
 
@@ -198,6 +202,10 @@ export default function SignIn() {
           </>
         )}
       </View>
+      {/* Bilgisayardaki UniCoach'un Profil → Telefonu eşle kodu: sunucu adresini ve oturumu birlikte getirir. */}
+      <Button variant="ghost" icon={<QrCode size={18} color={colors.text} />} onPress={() => router.push("/eslestir")}>
+        QR ile bağlan
+      </Button>
     </Screen>
   );
 }

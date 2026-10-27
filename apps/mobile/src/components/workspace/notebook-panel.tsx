@@ -34,7 +34,7 @@ import { Sheet } from "@/components/ui/sheet";
 import { Text } from "@/components/ui/text";
 import { ToolButton, ToolGroup } from "@/components/ui/tool-button";
 import { useDialog } from "@/components/ui/use-dialog";
-import { api, API_BASE_URL } from "@/lib/api";
+import { api, apiBaseUrl } from "@/lib/api";
 import { notePageHtml, type NotePageEvent, type NoteToolState } from "@/lib/note-page";
 import { deviceStore } from "@/lib/storage";
 import { useTheme } from "@/lib/theme";
@@ -488,7 +488,7 @@ export function NotebookPanel({
         <PageFrame
           ref={frameRef}
           html={html}
-          baseUrl={`${API_BASE_URL}/`}
+          baseUrl={`${apiBaseUrl()}/`}
           background={colors.surfaceMuted}
           onMessage={onMessage}
           style={{ flex: 1, opacity: showCanvas ? 1 : 0 }}

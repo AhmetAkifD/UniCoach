@@ -2,6 +2,7 @@ import { ROLE_LABELS } from "@unicoach/shared";
 import { ExamTrackForm } from "@/components/exam-track-form";
 import { DeleteAccount, NameForm, PasswordForm } from "@/components/profile/account-forms";
 import { AvatarEditor } from "@/components/profile/avatar-editor";
+import { PairPhone } from "@/components/profile/pair-phone";
 import { ThemeForm } from "@/components/profile/theme-form";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -66,6 +67,12 @@ export default async function ProfilePage() {
               Konu Anlatımı'nda ders listesi buna göre öne çıkar. Diğer sınavın derslerine de kaynak ekleyebilirsin.
             </p>
           </div>
+        </Card>
+      </Section>
+
+      <Section title="Telefonu eşle" description="Mobil uygulama bu bilgisayardaki sunucuya bağlanır; sunucuya ulaşamadığında da kendi kopyasıyla çalışır.">
+        <Card>
+          <PairPhone />
         </Card>
       </Section>
 

@@ -52,7 +52,7 @@ import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
 import { Text } from "@/components/ui/text";
 import { useDialog } from "@/components/ui/use-dialog";
-import { API_BASE_URL, api } from "@/lib/api";
+import { apiBaseUrl, api } from "@/lib/api";
 import { pdfjsAssets } from "@/lib/offline-files";
 import { questionEditorHtml, type EditorBox, type EditorMode, type EditorPageEvent } from "@/lib/question-editor-page";
 import { useTheme } from "@/lib/theme";
@@ -470,7 +470,7 @@ export function QuestionEditor({
           ref={frameRef}
           file={pdf.file}
           html={html}
-          baseUrl={`${API_BASE_URL}/`}
+          baseUrl={`${apiBaseUrl()}/`}
           background={colors.surfaceMuted}
           onMessage={onMessage}
           style={{ flex: 1 }}

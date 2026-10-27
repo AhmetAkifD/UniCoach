@@ -4,7 +4,7 @@ import { spacing } from "@unicoach/design";
 import { type PageFrameHandle } from "@/components/page-frame";
 import { bookPdfSource, pdfErrorText, PdfPageFrame } from "@/components/pdf-page-frame";
 import { Text } from "@/components/ui/text";
-import { API_BASE_URL } from "@/lib/api";
+import { apiBaseUrl } from "@/lib/api";
 import { pdfjsAssets } from "@/lib/offline-files";
 import { questionViewHtml, type QuestionBox, type QuestionViewEvent } from "@/lib/question-view-page";
 import { useTheme } from "@/lib/theme";
@@ -54,7 +54,7 @@ export function QuestionView({
         ref={frameRef}
         file={pdf.file}
         html={html}
-        baseUrl={`${API_BASE_URL}/`}
+        baseUrl={`${apiBaseUrl()}/`}
         background={colors.surfaceMuted}
         onMessage={(m) => {
           const e = m as QuestionViewEvent;

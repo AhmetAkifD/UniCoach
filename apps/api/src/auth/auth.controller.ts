@@ -9,6 +9,7 @@ import {
   updateProfileSchema,
   type AuthResponse,
   type AuthUser,
+  type PairResponse,
   type ChangePasswordInput,
   type CheckEmailInput,
   type DeleteAccountInput,
@@ -46,6 +47,14 @@ export class AuthController {
   @UseGuards(AuthGuard)
   me(@CurrentUser() user: AuthUser): AuthUser {
     return user;
+  }
+
+  /** Telefonu eşleme (web Profil'deki QR kod): telefona oturum ve bu bilgisayarın yerel ağ adresleri. */
+  @Post("pair")
+  @HttpCode(200)
+  @UseGuards(AuthGuard)
+  pair(@CurrentUser() user: AuthUser): Promise<PairResponse> {
+    return this.auth.pair(user.id);
   }
 
   @Patch("me")

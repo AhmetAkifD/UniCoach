@@ -20,7 +20,7 @@ class Offline extends Error {}
  * yerel veritabanına uygulanır, henüz gönderilmemiş değişiklikler üstüne yeniden uygulanır.
  */
 export function createSyncEngine(remote: ApiClient): SyncEngine {
-  let state: SyncState = { connection: "unknown", syncing: false, syncedAt: null, pending: 0 };
+  let state: SyncState = { connection: "unknown", syncing: false, syncedAt: null, pending: 0, unauthorized: false };
   const listeners = new Set<(state: SyncState, changed: boolean) => void>();
   let running: Promise<boolean> | null = null;
   let again = false;
@@ -78,10 +78,11 @@ export function createSyncEngine(remote: ApiClient): SyncEngine {
       // Silinen PDF'in cihazdaki kopyası da silinir (başka cihazda silinmiş olabilir).
       for (const d of pull.deleted) if (d.table === "books") removeOfflineBook(d.id);
       if (state.connection !== "online") void ensurePdfjs();
-      set({ connection: "online", syncedAt: pull.serverTime }, changed);
+      set({ connection: "online", syncedAt: pull.serverTime, unauthorized: false }, changed);
       return changed;
     } catch (err) {
-      set({ connection: err instanceof Offline ? "offline" : "online" });
+      if (err instanceof Offline) set({ connection: "offline" });
+      else set({ connection: "online", unauthorized: err instanceof ApiError && err.status === 401 });
       return false;
     }
   }
@@ -127,6 +128,7 @@ export function createSyncEngine(remote: ApiClient): SyncEngine {
     refreshPending,
     setConnection: (connection: Connection) => connection !== state.connection && set({ connection }),
     async ensureOwner(userId) {
+      set({ unauthorized: false });
       if ((await getMeta("userId")) === userId) return;
       await wipeLocal();
       removeAllOfflineBooks();

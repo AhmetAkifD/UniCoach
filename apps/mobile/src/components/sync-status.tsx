@@ -1,12 +1,12 @@
 import { Pressable, View } from "react-native";
 import { router } from "expo-router";
-import { CloudOff, RefreshCw } from "lucide-react-native";
+import { CloudOff, QrCode, RefreshCw } from "lucide-react-native";
 import { spacing } from "@unicoach/design";
 import { formatDate } from "@unicoach/shared";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Text } from "@/components/ui/text";
-import { syncEngine } from "@/lib/api";
+import { apiBaseUrl, syncEngine } from "@/lib/api";
 import { useSyncState } from "@/lib/sync";
 import { useTheme } from "@/lib/theme";
 
@@ -31,6 +31,9 @@ export function SyncStatusCard() {
           : "Verilerinin bir kopyası bu cihazda da duruyor; sunucuya ulaşılamadığında da görebilir, not alabilirsin."}
       </Text>
       <Text size="sm" tone="textMuted">
+        Sunucu: {apiBaseUrl()}
+      </Text>
+      <Text size="sm" tone="textMuted">
         Son eşitleme: {state.syncedAt ? formatDate(state.syncedAt) : "henüz yok"}
       </Text>
       {state.pending > 0 && (
@@ -47,6 +50,15 @@ export function SyncStatusCard() {
         style={{ alignSelf: "flex-start" }}
       >
         Şimdi eşitle
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        icon={<QrCode size={16} color={colors.text} />}
+        onPress={() => router.push("/eslestir")}
+        style={{ alignSelf: "flex-start" }}
+      >
+        QR ile yeniden eşle
       </Button>
     </Card>
   );

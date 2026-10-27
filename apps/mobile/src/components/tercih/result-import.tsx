@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Text } from "@/components/ui/text";
 import { useDialog } from "@/components/ui/use-dialog";
-import { API_BASE_URL, api } from "@/lib/api";
+import { apiBaseUrl, api } from "@/lib/api";
 import { RESULT_PDF_MAX_BYTES, resultPdfHtml, toBase64, type ResultPdfEvent } from "@/lib/result-pdf";
 import { useTheme } from "@/lib/theme";
 import { ResultSummary } from "./result-summary";
@@ -94,7 +94,7 @@ export function ResultImport({ savedYears, accountName, onSaved }: { savedYears:
       {dialog}
       {/* Görünmeyen okuyucu sayfası (ekran dışında; Android sıfır boyutlu WebView'i çalıştırmayabilir) */}
       <View pointerEvents="none" style={{ position: "absolute", left: -1000, top: 0, width: 50, height: 50, opacity: 0 }}>
-        <PageFrame ref={frameRef} html={html} baseUrl={`${API_BASE_URL}/`} background="#ffffff" onMessage={onMessage} style={{ width: 50, height: 50 }} />
+        <PageFrame ref={frameRef} html={html} baseUrl={`${apiBaseUrl()}/`} background="#ffffff" onMessage={onMessage} style={{ width: 50, height: 50 }} />
       </View>
 
       <Card style={{ gap: spacing[4] }}>

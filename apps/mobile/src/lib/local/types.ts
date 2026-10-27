@@ -8,6 +8,8 @@ export interface SyncState {
   syncedAt: string | null;
   /** Sunucuya gönderilmeyi bekleyen değişiklik sayısı */
   pending: number;
+  /** Sunucu oturumu kabul etmedi (süresi doldu): yeniden giriş gerekir, yerel veri korunur. */
+  unauthorized: boolean;
 }
 
 /** Telefondaki kopyayı sunucuyla eşitleyen motor (web önizlemesinde kopya yoktur, motor boştur). */
