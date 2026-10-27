@@ -1,4 +1,4 @@
-import { PDFJS_CDN } from "./pdf-viewer";
+import { PDFJS_OPEN, pdfjsHead, type PdfSource } from "./pdfjs-page";
 
 /**
  * Sınav sorusu görüntüleyici: pdf.js ile sorunun PDF'teki kutusunu resim olarak çizer (web'deki QuestionImage'ın
@@ -18,8 +18,8 @@ export interface QuestionBox {
 export type QuestionViewEvent = { type: "loaded" } | { type: "shown" } | { type: "error"; message: string };
 
 export interface QuestionViewConfig {
-  url: string;
-  token: string | null;
+  /** PDF'in kaynağı: sunucu ya da cihazdaki kopya (lib/pdfjs-page.ts) */
+  source: PdfSource;
   background: string;
 }
 
@@ -30,7 +30,7 @@ export interface QuestionViewHandle {
   hide(): void;
 }
 
-export function questionViewHtml(config: QuestionViewConfig): string {
+export function questionViewHtml(config: QuestionViewConfig, pdfjs: { lib: string; worker: string } | null = null): string {
   return `<!doctype html>
 <html><head>
 <meta charset="utf-8">
@@ -40,10 +40,11 @@ html,body{margin:0;height:100%;background:${config.background};-webkit-user-sele
 #box{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:8px;box-sizing:border-box}
 canvas{background:#fff;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,.2);max-width:100%;max-height:100%;display:none}
 </style>
-<script src="${PDFJS_CDN}/pdf.min.js"></script>
+${pdfjsHead(pdfjs)}
 </head><body><div id="box"><canvas id="cv"></canvas></div>
 <script>
 var cfg = ${JSON.stringify(config)};
+${PDFJS_OPEN}
 var doc = null, task = null, seq = 0, pending = null;
 var cv = document.getElementById("cv"), box = document.getElementById("box");
 function post(m) {
@@ -83,22 +84,11 @@ function show(q) {
   });
 }
 window.uc = {
+  pdfData: pdfData,
   show: show,
   hide: function () { seq++; pending = null; cv.style.display = "none"; }
 };
-fetch("${PDFJS_CDN}/pdf.worker.min.js").then(function (r) { return r.text(); }).then(function (code) {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(new Blob([code], { type: "text/javascript" }));
-}).catch(function () {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = "${PDFJS_CDN}/pdf.worker.min.js";
-}).then(function () {
-  return pdfjsLib.getDocument({
-    url: cfg.url,
-    httpHeaders: cfg.token ? { Authorization: "Bearer " + cfg.token } : {},
-    disableAutoFetch: true,
-    disableStream: true,
-    rangeChunkSize: 1024 * 1024
-  }).promise;
-}).then(function (d) {
+openPdf(cfg.source).then(function (d) {
   doc = d;
   post({ type: "loaded" });
   if (pending) { var q = pending; pending = null; show(q); }

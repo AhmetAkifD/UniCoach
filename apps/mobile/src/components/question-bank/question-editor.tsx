@@ -46,12 +46,14 @@ import {
   type PageText,
   type QuestionRect,
 } from "@unicoach/shared";
-import { PageFrame, type PageFrameHandle } from "@/components/page-frame";
+import { type PageFrameHandle } from "@/components/page-frame";
+import { bookPdfSource, PdfPageFrame } from "@/components/pdf-page-frame";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
 import { Text } from "@/components/ui/text";
 import { useDialog } from "@/components/ui/use-dialog";
-import { API_BASE_URL, api, getApiToken } from "@/lib/api";
+import { API_BASE_URL, api } from "@/lib/api";
+import { pdfjsAssets } from "@/lib/offline-files";
 import { questionEditorHtml, type EditorBox, type EditorMode, type EditorPageEvent } from "@/lib/question-editor-page";
 import { useTheme } from "@/lib/theme";
 import { AnswerChoices, MethodsSheet, QuestionSheet, TestsSheet } from "./question-sheets";
@@ -115,15 +117,19 @@ export function QuestionEditor({
   const answered = questions.filter((q) => q.answer).length;
 
   // --- Sayfa (WebView) ---
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const pdf = useMemo(() => bookPdfSource(book.id), []);
   const html = useMemo(
     () =>
-      questionEditorHtml({
-        url: api.books.filePath(book.id),
-        token: getApiToken(),
-        page: focus?.page ?? 1,
-        background: colors.surfaceMuted,
-        colors: { primary: colors.primary, info: colors.info, danger: colors.danger, onPrimary: colors.onPrimary },
-      }),
+      questionEditorHtml(
+        {
+          source: pdf.source,
+          page: focus?.page ?? 1,
+          background: colors.surfaceMuted,
+          colors: { primary: colors.primary, info: colors.info, danger: colors.danger, onPrimary: colors.onPrimary },
+        },
+        pdfjsAssets(),
+      ),
     // Sayfa yalnızca ilk açılışta kurulur.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
@@ -460,7 +466,15 @@ export function QuestionEditor({
       ) : null}
 
       <View style={{ flex: 1 }}>
-        <PageFrame ref={frameRef} html={html} baseUrl={`${API_BASE_URL}/`} background={colors.surfaceMuted} onMessage={onMessage} style={{ flex: 1 }} />
+        <PdfPageFrame
+          ref={frameRef}
+          file={pdf.file}
+          html={html}
+          baseUrl={`${API_BASE_URL}/`}
+          background={colors.surfaceMuted}
+          onMessage={onMessage}
+          style={{ flex: 1 }}
+        />
         {!ready && (
           <View style={{ position: "absolute", inset: 0, alignItems: "center", justifyContent: "center", gap: spacing[3], padding: spacing[6], backgroundColor: colors.surfaceMuted }}>
             {loadError ? (

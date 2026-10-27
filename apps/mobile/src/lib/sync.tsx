@@ -1,6 +1,7 @@
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import { AppState } from "react-native";
 import { syncEngine } from "./api";
+import { ensurePdfjs } from "./offline-files";
 import type { SyncState } from "./local";
 
 /** Uygulama açıkken bu aralıkla eşitlenir (çevrimdışıyken de bağlantı yeniden denenir). */
@@ -25,6 +26,7 @@ export function useSyncRefresh(reload: () => void) {
 export function SyncTriggers() {
   useEffect(() => {
     if (!syncEngine.enabled) return;
+    void ensurePdfjs();
     void syncEngine.sync();
     let timer: ReturnType<typeof setInterval> | null = setInterval(() => void syncEngine.sync(), PULL_INTERVAL_MS);
     const sub = AppState.addEventListener("change", (state) => {

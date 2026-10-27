@@ -11,6 +11,7 @@ import { Text } from "@/components/ui/text";
 import { useDialog } from "@/components/ui/use-dialog";
 import { api } from "@/lib/api";
 import { useTheme } from "@/lib/theme";
+import { OfflineBook } from "./offline-book";
 import { TopicInput } from "./topic-input";
 
 /** PDF'in bilgileri ve ayarları (web'deki BookHeader): ad, ders, konu, silme. */
@@ -105,6 +106,8 @@ export function BookSettings({
             </View>
           ))}
         </View>
+
+        <OfflineBook book={book} />
 
         <Button
           icon={<ListChecks size={18} color={colors.onPrimary} />}

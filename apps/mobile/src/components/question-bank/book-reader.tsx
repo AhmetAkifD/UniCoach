@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, AppState, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft, ChevronRight, TriangleAlert } from "lucide-react-native";
@@ -7,9 +7,10 @@ import type { BookSummary } from "@unicoach/shared";
 import { IconButton } from "@/components/ui/icon-button";
 import { Text } from "@/components/ui/text";
 import { useDialog } from "@/components/ui/use-dialog";
-import { api, getApiToken } from "@/lib/api";
+import { api, syncEngine } from "@/lib/api";
 import type { PdfEvent, PdfFrameHandle } from "@/lib/pdf-viewer";
 import { useTheme } from "@/lib/theme";
+import { bookPdfSource } from "@/components/pdf-page-frame";
 import { PdfFrame } from "./pdf-frame";
 
 /** Sayfa değiştikten bu süre sonra kalınan sayfa kaydedilir (kaydırırken her sayfada istek atılmasın). */
@@ -33,6 +34,9 @@ export function BookReader({
   const insets = useSafeAreaInsets();
   const { prompt, dialog } = useDialog();
   const frameRef = useRef<PdfFrameHandle>(null);
+  // Cihazda indirilmiş kopyası varsa PDF oradan okunur (çevrimdışı da açılır).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const pdf = useMemo(() => bookPdfSource(book.id), []);
   const [page, setPage] = useState(Math.max(1, book.lastPage));
   const [pageCount, setPageCount] = useState(book.pageCount ?? 0);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
@@ -80,7 +84,12 @@ export function BookReader({
   function onEvent(event: PdfEvent) {
     if (event.type === "error") {
       setStatus("error");
-      setError(event.message);
+      // Sunucuya ulaşılamıyorsa ve PDF cihazda değilse ne yapacağı söylenir.
+      setError(
+        !pdf.file && syncEngine.getState().connection === "offline"
+          ? "Bu PDF bu cihaza indirilmemiş. Çevrimdışı okumak için sunucuya bağlıyken PDF bilgilerinden \"Çevrimdışı kullan\"ı aç."
+          : event.message,
+      );
     } else if (event.type === "loaded") {
       setStatus("ready");
       setPageCount(event.pageCount);
@@ -107,7 +116,8 @@ export function BookReader({
       {dialog}
       <PdfFrame
         ref={frameRef}
-        config={{ url: api.books.filePath(book.id), token: getApiToken(), page: Math.max(1, book.lastPage), background: colors.surfaceMuted }}
+        config={{ source: pdf.source, page: Math.max(1, book.lastPage), background: colors.surfaceMuted }}
+        file={pdf.file}
         onEvent={onEvent}
         style={{ flex: 1 }}
       />

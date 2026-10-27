@@ -1,4 +1,5 @@
 import { ApiError, SYNC_PUSH_MAX, type ApiClient } from "@unicoach/shared";
+import { ensurePdfjs, removeAllOfflineBooks, removeOfflineBook } from "../offline-files";
 import { withTimeout } from "../timeout";
 import { applyPull, deleteOutbox, getMeta, localDb, outboxCount, readOutbox, setInflight, setMeta, wipeLocal } from "./db";
 import { replayOutbox } from "./ops";
@@ -74,6 +75,9 @@ export function createSyncEngine(remote: ApiClient): SyncEngine {
       const cursor = Number((await getMeta("cursor")) ?? 0);
       const pull = await request(remote.sync.pull(cursor), PULL_TIMEOUT_MS);
       const changed = (await applyPull(pull, replayOutbox)) > 0;
+      // Silinen PDF'in cihazdaki kopyası da silinir (başka cihazda silinmiş olabilir).
+      for (const d of pull.deleted) if (d.table === "books") removeOfflineBook(d.id);
+      if (state.connection !== "online") void ensurePdfjs();
       set({ connection: "online", syncedAt: pull.serverTime }, changed);
       return changed;
     } catch (err) {
@@ -125,11 +129,13 @@ export function createSyncEngine(remote: ApiClient): SyncEngine {
     async ensureOwner(userId) {
       if ((await getMeta("userId")) === userId) return;
       await wipeLocal();
+      removeAllOfflineBooks();
       await setMeta("userId", userId);
       set({ syncedAt: null, pending: 0 }, true);
     },
     async wipe() {
       await wipeLocal();
+      removeAllOfflineBooks();
       set({ syncedAt: null, pending: 0 }, true);
     },
   };

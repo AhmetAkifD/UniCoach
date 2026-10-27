@@ -1,5 +1,5 @@
 import type { PageText, QuestionRect } from "@unicoach/shared";
-import { PDFJS_CDN } from "./pdf-viewer";
+import { PDFJS_OPEN, pdfjsHead, type PdfSource } from "./pdfjs-page";
 
 /**
  * Soru düzenleyicisinin sayfası: pdf.js ile tek bir PDF sayfasını çizer, soru kutularını üstünde gösterir ve
@@ -39,8 +39,8 @@ export type EditorPageEvent =
   | { type: "text"; id: number; data?: PageText; message?: string };
 
 export interface EditorPageConfig {
-  url: string;
-  token: string | null;
+  /** PDF'in kaynağı: sunucu ya da cihazdaki kopya (lib/pdfjs-page.ts) */
+  source: PdfSource;
   page: number;
   background: string;
   colors: { primary: string; info: string; danger: string; onPrimary: string };
@@ -55,7 +55,7 @@ export interface EditorPageHandle {
   read(id: number, page: number, ocr: boolean): void;
 }
 
-export function questionEditorHtml(config: EditorPageConfig): string {
+export function questionEditorHtml(config: EditorPageConfig, pdfjs: { lib: string; worker: string } | null = null): string {
   return `<!doctype html>
 <html><head>
 <meta charset="utf-8">
@@ -73,11 +73,12 @@ body.draw #layer{touch-action:none}
 .h{position:absolute;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;background:var(--c);border:2px solid #fff;box-sizing:border-box;touch-action:none}
 #ghost{position:absolute;border:2px dashed ${config.colors.primary};background:color-mix(in srgb,${config.colors.primary} 10%,transparent);display:none;pointer-events:none}
 </style>
-<script src="${PDFJS_CDN}/pdf.min.js"></script>
+${pdfjsHead(pdfjs)}
 </head><body>
 <div id="wrap"><div id="page"><canvas id="cv"></canvas><div id="layer"><div id="ghost"></div></div></div></div>
 <script>
 var cfg = ${JSON.stringify(config)};
+${PDFJS_OPEN}
 var colors = { normal: cfg.colors.info, selected: cfg.colors.primary, duplicate: cfg.colors.danger };
 var doc = null, current = 0, size = null, boxes = [], mode = "pan", renderTask = null, drag = null, ocrWorker = null;
 var pageEl = document.getElementById("page"), layer = document.getElementById("layer"), ghost = document.getElementById("ghost"), cv = document.getElementById("cv");
@@ -275,6 +276,7 @@ function ocrText(n) {
 }
 
 window.uc = {
+  pdfData: pdfData,
   show: show,
   setBoxes: function (list) { boxes = list; drawBoxes(); },
   setMode: function (m) { mode = m; document.body.classList.toggle("draw", m === "draw"); },
@@ -288,20 +290,7 @@ window.uc = {
   }
 };
 
-// Worker başka kökenden doğrudan açılamaz; betik indirilip bu sayfanın kökeninde çalıştırılır (bkz. pdf-viewer.ts).
-fetch("${PDFJS_CDN}/pdf.worker.min.js").then(function (r) { return r.text(); }).then(function (code) {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(new Blob([code], { type: "text/javascript" }));
-}).catch(function () {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = "${PDFJS_CDN}/pdf.worker.min.js";
-}).then(function () {
-  return pdfjsLib.getDocument({
-    url: cfg.url,
-    httpHeaders: cfg.token ? { Authorization: "Bearer " + cfg.token } : {},
-    disableAutoFetch: true,
-    disableStream: true,
-    rangeChunkSize: 1024 * 1024
-  }).promise;
-}).then(function (d) {
+openPdf(cfg.source).then(function (d) {
   doc = d;
   post({ type: "loaded", pageCount: d.numPages });
   show(Math.min(Math.max(1, cfg.page), d.numPages));
