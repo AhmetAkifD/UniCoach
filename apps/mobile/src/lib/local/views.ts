@@ -76,6 +76,11 @@ export async function listSources(): Promise<SourceSummary[]> {
   return sources.sort((a, b) => desc(a.createdAt, b.createdAt)).map((s) => sourceSummary(s, bySource.get(s.id) ?? []));
 }
 
+export async function getSourceItem(id: string): Promise<SourceItem | null> {
+  const item = await readOne("sourceItems", id);
+  return item ? sourceItem(item) : null;
+}
+
 export async function getSource(id: string): Promise<SourceDetail | null> {
   const source = await readOne("sources", id);
   if (!source) return null;

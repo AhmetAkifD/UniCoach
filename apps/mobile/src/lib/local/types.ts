@@ -6,6 +6,8 @@ export interface SyncState {
   syncing: boolean;
   /** Son başarılı eşitlemenin sunucu saati */
   syncedAt: string | null;
+  /** Sunucuya gönderilmeyi bekleyen değişiklik sayısı */
+  pending: number;
 }
 
 /** Telefondaki kopyayı sunucuyla eşitleyen motor (web önizlemesinde kopya yoktur, motor boştur). */
@@ -15,8 +17,15 @@ export interface SyncEngine {
   getState(): SyncState;
   /** Durum değişince; `changed` yerel veri değiştiyse true. Aboneliği kaldıran işlev döner. */
   subscribe(listener: (state: SyncState, changed: boolean) => void): () => void;
-  /** Sunucudaki yenilikleri çeker; aynı anda tek çekme çalışır. Yerel veri değiştiyse true. */
-  pull(): Promise<boolean>;
+  /**
+   * Eşitler: önce bekleyen değişiklikler gönderilir, sonra sunucudaki yenilikler çekilir. Aynı anda tek eşitleme
+   * çalışır. Yerel veri değiştiyse true.
+   */
+  sync(): Promise<boolean>;
+  /** Kısa süre sonra eşitler (art arda değişikliklerde tek istek). */
+  schedule(): void;
+  /** Bekleyen değişiklik sayısını yeniden okur (yerel değişiklikten sonra). */
+  refreshPending(): Promise<void>;
   /** Bağlantının durumu dışarıdan öğrenildiyse (ör. açılışta `auth/me` başarısız). */
   setConnection(connection: Connection): void;
   /** Veri başka bir hesabınsa yerel kopya silinir. */

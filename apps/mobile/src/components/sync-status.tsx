@@ -27,18 +27,23 @@ export function SyncStatusCard() {
       </View>
       <Text size="sm" tone="textMuted">
         {offline
-          ? "Evdeki sunucuya ulaşılamıyor. Verilerini bu cihazdaki kopyadan görüyorsun; değişiklik yapmak için sunucuyla aynı ağda olmalısın."
-          : "Verilerinin bir kopyası bu cihazda da duruyor; sunucuya ulaşılamadığında da görebilirsin."}
+          ? "Evdeki sunucuya ulaşılamıyor. Verilerini bu cihazdaki kopyadan görüyorsun. Notların, izleme ilerlemen ve kaldığın sayfa bu cihaza kaydedilir, sunucuya ulaşınca gönderilir. Diğer değişiklikler için sunucuyla aynı ağda olmalısın."
+          : "Verilerinin bir kopyası bu cihazda da duruyor; sunucuya ulaşılamadığında da görebilir, not alabilirsin."}
       </Text>
       <Text size="sm" tone="textMuted">
         Son eşitleme: {state.syncedAt ? formatDate(state.syncedAt) : "henüz yok"}
       </Text>
+      {state.pending > 0 && (
+        <Text size="sm" weight="medium" tone="warning">
+          Gönderilmeyi bekleyen {state.pending} değişiklik var.
+        </Text>
+      )}
       <Button
         variant="secondary"
         size="sm"
         loading={state.syncing}
         icon={<RefreshCw size={16} color={colors.primarySoftText} />}
-        onPress={() => void syncEngine.pull()}
+        onPress={() => void syncEngine.sync()}
         style={{ alignSelf: "flex-start" }}
       >
         Şimdi eşitle

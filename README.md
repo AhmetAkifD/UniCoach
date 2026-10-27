@@ -79,7 +79,7 @@ npm run mobile
 - **Telefon:** Expo Go ile QR kodu okutun. Telefon ve bilgisayar aynı Wi‑Fi ağında olmalı, Windows güvenlik duvarı 4000 portuna izin vermeli. Uygulama SDK 58 kullanır; Play Store'daki Expo Go henüz bu sürümü desteklemiyorsa emülatörü kullanın.
 - Tarayıcı önizlemesi: `npm run web -w @unicoach/mobile` (http://localhost:8081).
 
-Mobilde web'deki bütün modüller var: giriş, ana sayfa, profil, Konu Anlatımı, Soru Bankası (PDF yükleme, okuma ve soru çıkarma), Çalışma Alanı (video, PDF ve not defteri alt alta), Geçmiş Sınavlar ve YKS Tercih. Telefon verilerinin bir kopyasını kendinde tutar: bilgisayardaki sunucuya ulaşılamadığında (okulda, yolda) da verilerini görebilirsin; aynı ağa dönünce kendiliğinden eşitlenir. Çevrimdışıyken değişiklik yapma ve PDF'leri cihaza indirme sonraki sürümlerde gelecek.
+Mobilde web'deki bütün modüller var: giriş, ana sayfa, profil, Konu Anlatımı, Soru Bankası (PDF yükleme, okuma ve soru çıkarma), Çalışma Alanı (video, PDF ve not defteri alt alta), Geçmiş Sınavlar ve YKS Tercih. Telefon verilerinin bir kopyasını kendinde tutar: bilgisayardaki sunucuya ulaşılamadığında (okulda, yolda) da verilerini görebilirsin; aynı ağa dönünce kendiliğinden eşitlenir. Çevrimdışıyken not alabilir, video izleyip PDF okuyabilirsin; notların, izleme ilerlemen ve kaldığın sayfa telefona kaydedilir, eve dönünce sunucuya gönderilir (aynı sayfaya iki cihazda yazılanlar birleştirilir). PDF'leri cihaza indirme sonraki sürümde gelecek.
 
 ## Mimari
 

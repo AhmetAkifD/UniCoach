@@ -75,7 +75,7 @@ export default function UploadBookScreen() {
       await uploadRef.current.promise;
       uploadRef.current = null;
       // Dosya API dışından gönderildiği için yeni PDF'i telefondaki kopyaya almak üzere eşitlenir.
-      await syncEngine.pull();
+      await syncEngine.sync();
       router.replace({ pathname: "/pdf/[id]", params: { id: book.id } });
     } catch (err) {
       uploadRef.current = null;

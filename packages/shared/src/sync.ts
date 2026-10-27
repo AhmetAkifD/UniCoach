@@ -1,5 +1,8 @@
+import { z } from "zod";
+import { progressSchema } from "./library";
+import { notebookInputSchema, notePageDiffSchema, type NotePageContent } from "./notebooks";
 import type { ProgramSummary } from "./programs";
-import type { NotePageContent } from "./notebooks";
+import { bookProgressSchema } from "./question-bank";
 import type { YksScore, YksTest } from "./yks-result";
 
 /**
@@ -194,4 +197,40 @@ export interface SyncPullResponse {
   /** `since`ten sonra silinenler */
   deleted: { table: SyncTable; id: string }[];
   serverTime: string;
+}
+
+// --- Telefondan sunucuya: çevrimdışı yapılan değişiklikler ---
+
+const rowId = z.string().min(1).max(40);
+/** Değişikliğin telefondaki anı; aynı satırda son yapılan kazanır (video ilerlemesi, kalınan sayfa). */
+const at = z.iso.datetime();
+
+/**
+ * Telefonda yapılan değişiklikler önce yerel veritabanına ve gönderilecekler kuyruğuna yazılır, sunucuya ulaşınca
+ * sırayla gönderilir. Her işlem tekrar gönderilse de aynı sonucu verir (yanıt kaybolursa kuyruk yeniden gönderir).
+ * Yeni defter ve sayfaların kimliğini telefon üretir.
+ */
+export const syncOpSchema = z.discriminatedUnion("type", [
+  progressSchema.extend({ type: z.literal("sourceProgress"), sourceId: rowId, itemId: rowId, at }),
+  bookProgressSchema.extend({ type: z.literal("bookProgress"), bookId: rowId, at }),
+  z.object({ type: z.literal("notebookCreate"), id: rowId, pageId: rowId, title: notebookInputSchema.shape.title }),
+  z.object({ type: z.literal("notebookRename"), id: rowId, title: notebookInputSchema.shape.title }),
+  z.object({ type: z.literal("notebookDelete"), id: rowId }),
+  z.object({ type: z.literal("pageAdd"), notebookId: rowId, id: rowId, afterPageId: rowId.nullable() }),
+  z.object({ type: z.literal("pageDelete"), notebookId: rowId, pageId: rowId }),
+  z.object({ type: z.literal("pageEdit"), notebookId: rowId, pageId: rowId, diff: notePageDiffSchema }),
+]);
+export type SyncOp = z.infer<typeof syncOpSchema>;
+
+/** Bir istekte en fazla bu kadar işlem gönderilir (fazlası sonraki istekte). */
+export const SYNC_PUSH_MAX = 100;
+
+/** POST /api/sync/push */
+export const syncPushSchema = z.object({ ops: z.array(syncOpSchema).min(1).max(SYNC_PUSH_MAX) });
+export type SyncPushInput = z.infer<typeof syncPushSchema>;
+
+export interface SyncPushResponse {
+  applied: number;
+  /** Uygulanamayan işlemler (ör. başka cihazda silinmiş deftere yazı); telefon bunları kuyruktan atar. */
+  rejected: { index: number; reason: string }[];
 }

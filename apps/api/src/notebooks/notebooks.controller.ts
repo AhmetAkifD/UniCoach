@@ -76,7 +76,7 @@ export class NotebooksController {
     @Param("pageId") pageId: string,
     @Body(new ZodValidationPipe(saveNotePageSchema)) body: SaveNotePageInput,
   ): Promise<NotePageRef> {
-    return this.notebooks.savePage(user.id, id, pageId, body.content);
+    return this.notebooks.savePage(user.id, id, pageId, body);
   }
 
   @Delete(":id/pages/:pageId")

@@ -25,6 +25,8 @@ import {
   NOTE_PEN_WIDTHS,
   NOTE_TEXT_SIZES,
   NOTEBOOK_MAX_PAGES,
+  isEmptyNoteDiff,
+  notePageDiff,
   type NotebookDetail,
   type NotebookSummary,
   type NotePageContent,
@@ -105,6 +107,19 @@ export function NotebookPanel({
   // --- Kayıt ---
   const dirtyRef = useRef<{ notebookId: string; pageId: string; content: NotePageContent } | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Sunucuya en son kaydedilen (ya da yüklenen) hâl: kayıtlar bundan farkla gönderilir. */
+  const savedRef = useRef<{ pageId: string; content: NotePageContent } | null>(null);
+
+  /**
+   * Kayıt gövdesi: yalnızca son kayıttan bu yana değişenler. Sunucu farkı kendi sayfasına uygular; bu arada
+   * telefondan eklenenler silinmez. Fark boşsa gönderilecek bir şey yoktur.
+   */
+  const saveBody = (dirty: { pageId: string; content: NotePageContent }) => {
+    const saved = savedRef.current;
+    if (!saved || saved.pageId !== dirty.pageId) return { content: dirty.content };
+    const diff = notePageDiff(saved.content, dirty.content);
+    return isEmptyNoteDiff(diff) ? null : { diff };
+  };
 
   const flush = useCallback(async () => {
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -113,7 +128,9 @@ export function NotebookPanel({
     if (!dirty) return true;
     setSaveState("saving");
     try {
-      await browserApi.notebooks.savePage(dirty.notebookId, dirty.pageId, { content: dirty.content });
+      const body = saveBody(dirty);
+      if (body) await browserApi.notebooks.savePage(dirty.notebookId, dirty.pageId, body);
+      savedRef.current = { pageId: dirty.pageId, content: dirty.content };
       // Kayıt sürerken yeni değişiklik geldiyse o da sırada kalır.
       if (dirtyRef.current === dirty) {
         dirtyRef.current = null;
@@ -146,11 +163,12 @@ export function NotebookPanel({
   useEffect(() => {
     const onHide = () => {
       const dirty = dirtyRef.current;
-      if (!dirty) return;
+      const body = dirty && saveBody(dirty);
+      if (!dirty || !body) return;
       void fetch(browserApi.notebooks.pagePath(dirty.notebookId, dirty.pageId), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: dirty.content }),
+        body: JSON.stringify(body),
         keepalive: true,
       });
     };
@@ -198,7 +216,9 @@ export function NotebookPanel({
       await flush();
       try {
         const page = await browserApi.notebooks.page(detail.id, pageId);
-        if (!cancelled) setContent(page.content);
+        if (cancelled) return;
+        savedRef.current = { pageId, content: page.content };
+        setContent(page.content);
       } catch {
         if (!cancelled) setLoadError("Sayfa açılamadı.");
       }
