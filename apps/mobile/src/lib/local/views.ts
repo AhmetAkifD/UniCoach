@@ -115,6 +115,9 @@ export async function getBook(id: string): Promise<BookSummary | null> {
   return book ? bookSummary(book, (await countByParent("bookQuestions")).get(id) ?? 0) : null;
 }
 
+/** Kaynak sorular, satır olarak (sınav kurarken ve kaynaktan yeniden kopyalarken) */
+export const bookQuestionRows = (bookId: string) => readByParent("bookQuestions", bookId);
+
 export async function bookQuestions(id: string): Promise<BookQuestion[]> {
   return (await readByParent("bookQuestions", id))
     .sort((a, b) => a.position - b.position)

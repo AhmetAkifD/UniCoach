@@ -71,6 +71,25 @@ export async function applyLocally(tx: Tx, op: SyncOp, at: string): Promise<void
       }
       return;
     }
+    case "examState": {
+      if (!(await getRow(tx, "books", op.exam.bookId))) return;
+      const previous = await getRow(tx, "exams", op.exam.id);
+      await putRow(tx, "exams", { ...op.exam, syncVersion: previous?.syncVersion ?? 0 });
+      const existing = new Map((await getChildren(tx, "examQuestions", op.exam.id)).map((q) => [q.id, q]));
+      const keep = new Set(op.questions.map((q) => q.id));
+      await deleteRows(
+        tx,
+        "examQuestions",
+        [...existing.keys()].filter((id) => !keep.has(id)),
+      );
+      for (const q of op.questions) {
+        await putRow(tx, "examQuestions", { ...q, examId: op.exam.id, syncVersion: existing.get(q.id)?.syncVersion ?? 0 });
+      }
+      return;
+    }
+    case "examDelete":
+      await deleteRows(tx, "exams", [op.id]);
+      return;
     case "notebookCreate": {
       if (await getRow(tx, "notebooks", op.id)) return;
       await putRow(tx, "notebooks", { id: op.id, title: op.title, createdAt: at, updatedAt: at, syncVersion: 0 });
@@ -129,6 +148,8 @@ function outboxKey(op: SyncOp): string | undefined {
       return `bookUpdate:${op.bookId}`;
     case "bookQuestions":
       return `bookQuestions:${op.bookId}`;
+    case "examState":
+      return `examState:${op.exam.id}`;
     case "notebookRename":
       return `notebookRename:${op.id}`;
     case "pageEdit":

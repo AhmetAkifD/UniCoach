@@ -205,6 +205,40 @@ const rowId = z.string().min(1).max(40);
 /** Değişikliğin telefondaki anı; aynı satırda son yapılan kazanır (video ilerlemesi, kalınan sayfa). */
 const at = z.iso.datetime();
 
+const choice = z.enum(["A", "B", "C", "D", "E"]);
+const syncExamSchema = z.object({
+  id: rowId,
+  bookId: rowId,
+  title: z.string().min(1).max(200),
+  track: z.enum(["YKS", "LGS"]),
+  durationSec: z.number().int().min(60).max(24 * 3600).nullable(),
+  extraSec: z.number().int().min(0).max(24 * 3600),
+  pausedAt: at.nullable(),
+  pausedMs: z.number().int().min(0),
+  startedAt: at,
+  finishedAt: at.nullable(),
+  correct: z.number().int().min(0).nullable(),
+  wrong: z.number().int().min(0).nullable(),
+  blank: z.number().int().min(0).nullable(),
+  net: z.number().nullable(),
+});
+const syncExamQuestionSchema = z.object({
+  id: rowId,
+  position: z.number().int().min(0),
+  bookQuestionId: rowId.nullable(),
+  section: z.string().min(1).max(60),
+  number: z.number().int().min(1).max(999),
+  page: z.number().int().min(1),
+  x: z.number(),
+  y: z.number(),
+  w: z.number(),
+  h: z.number(),
+  choiceCount: z.number().int().min(2).max(5),
+  correctAnswer: choice,
+  answer: choice.nullable(),
+  answeredAt: at.nullable(),
+});
+
 /**
  * Telefonda yapılan değişiklikler önce yerel veritabanına ve gönderilecekler kuyruğuna yazılır, sunucuya ulaşınca
  * sırayla gönderilir. Her işlem tekrar gönderilse de aynı sonucu verir (yanıt kaybolursa kuyruk yeniden gönderir).
@@ -217,6 +251,12 @@ export const syncOpSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("bookUpdate"), bookId: rowId, patch: updateBookSchema }),
   /** Çıkarılan soruların tamamı (düzenleyicinin "Kaydet"i; yeni soruların kimliğini telefon üretir) */
   z.object({ type: z.literal("bookQuestions"), bookId: rowId, input: saveBookQuestionsSchema }),
+  /**
+   * Telefonda çözülen sınavın bütün durumu (kullanıcı kararı: sınav hangi cihazda çözülüyorsa orada hesaplanır;
+   * süre, cevaplar ve sonuç olduğu gibi sunucuya yazılır). Sınav yoksa kurulur.
+   */
+  z.object({ type: z.literal("examState"), exam: syncExamSchema, questions: z.array(syncExamQuestionSchema).min(1).max(300) }),
+  z.object({ type: z.literal("examDelete"), id: rowId }),
   z.object({ type: z.literal("notebookCreate"), id: rowId, pageId: rowId, title: notebookInputSchema.shape.title }),
   z.object({ type: z.literal("notebookRename"), id: rowId, title: notebookInputSchema.shape.title }),
   z.object({ type: z.literal("notebookDelete"), id: rowId }),

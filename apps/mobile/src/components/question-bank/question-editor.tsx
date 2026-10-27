@@ -47,7 +47,7 @@ import {
   type QuestionRect,
 } from "@unicoach/shared";
 import { type PageFrameHandle } from "@/components/page-frame";
-import { bookPdfSource, PdfPageFrame } from "@/components/pdf-page-frame";
+import { bookPdfSource, pdfErrorText, PdfPageFrame } from "@/components/pdf-page-frame";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
 import { Text } from "@/components/ui/text";
@@ -199,7 +199,7 @@ export function QuestionEditor({
     } else if (e.type === "draw") {
       void onDrawn(e.rect);
     } else if (e.type === "error") {
-      setLoadError(e.message);
+      setLoadError(pdfErrorText(pdf.file, e.message));
     } else if (e.type === "text") {
       const request = requests.current.get(e.id);
       requests.current.delete(e.id);

@@ -1,6 +1,21 @@
 import {
+  answerQuestion,
   ApiError,
+  createExamSchema,
+  createExamState,
+  EXAM_GRACE_MS,
+  ExamRuleError,
+  extendExam,
+  findSubject,
+  finishExam,
+  finishIfExpired,
   isEmptyNoteDiff,
+  pauseExam,
+  resumeExam,
+  resyncExam,
+  type ExamDetail,
+  type ExamState,
+  type SyncBookQuestion,
   saveBookQuestionsSchema,
   updateBookSchema,
   NOTEBOOK_MAX_PAGES,
@@ -11,7 +26,7 @@ import {
   type NotePageRef,
   type SyncOp,
 } from "@unicoach/shared";
-import { getMeta, getRow, transaction } from "./db";
+import { getChildren, getMeta, getRow, transaction } from "./db";
 import { record } from "./ops";
 import { createSyncEngine } from "./sync-engine";
 import type { SyncEngine } from "./types";
@@ -99,6 +114,51 @@ export function createLocalLayer(remote: ApiClient): { api: ApiClient; engine: S
     return found;
   };
 
+  // --- Sınavlar ---
+
+  /** Kural ihlali ekrana sunucudaki gibi `ApiError` olarak gelir. */
+  function rules<T>(run: () => T): T {
+    try {
+      return run();
+    } catch (err) {
+      if (err instanceof ExamRuleError) throw new ApiError(err.status, err.message);
+      throw err;
+    }
+  }
+
+  const examState = (id: string) =>
+    transaction(async (tx): Promise<ExamState | null> => {
+      const exam = await getRow(tx, "exams", id);
+      if (!exam) return null;
+      const questions = (await getChildren(tx, "examQuestions", id)).sort((a, b) => a.position - b.position);
+      return { exam, questions };
+    });
+
+  const bookSources = async (bookId: string) =>
+    new Map((await views.bookQuestionRows(bookId)).map((q) => [q.id, q] as const));
+
+  /** Durum değiştiyse bütünüyle kuyruğa yazılır (aynı sınavın bekleyen durumu yenisiyle değişir). */
+  async function saveExam(before: ExamState | null, next: ExamState): Promise<ExamDetail> {
+    if (!before || JSON.stringify(before) !== JSON.stringify(next)) {
+      const op = { type: "examState", exam: next.exam, questions: next.questions } as Extract<SyncOp, { type: "examState" }>;
+      await change(op);
+    }
+    const detail = await views.getExam(next.exam.id);
+    if (!detail) throw new ApiError(404, "Sınav bulunamadı.");
+    return detail;
+  }
+
+  async function examAction(id: string, step: (state: ExamState, sources: Map<string, SyncBookQuestion>) => ExamState): Promise<ExamDetail> {
+    const state = await examState(id);
+    if (!state) {
+      // Bu cihaza henüz gelmemiş sınav (ör. web'de az önce kuruldu): bağlantı varsa sunucudan okunur.
+      if (engine.getState().connection !== "offline") return remote.exams.get(id);
+      throw new ApiError(404, "Sınav bulunamadı.");
+    }
+    const sources = await bookSources(state.exam.bookId);
+    return saveExam(state, rules(() => step(state, sources)));
+  }
+
   const notebook = async (id: string): Promise<NotebookDetail> => {
     const detail = await views.getNotebook(id);
     if (!detail) throw new ApiError(404, "Defter bulunamadı.");
@@ -140,19 +200,45 @@ export function createLocalLayer(remote: ApiClient): { api: ApiClient; engine: S
         return views.bookQuestions(bookId);
       },
     },
+    // Sınavlar telefonda çözülür (çevrimdışı da): kurallar ortak paketteki exam-engine'de, durum bütünüyle gönderilir.
     exams: {
-      ...writes(remote.exams),
-      list: () => list(views.listExams),
-      // Süre sunucuda tutulduğu için bağlantı varken sınav sunucudan okunur (süresi dolan sınav orada kapanır).
-      get: async (id) => {
-        if (engine.getState().connection !== "offline") {
-          try {
-            return await remote.exams.get(id);
-          } catch (err) {
-            if (err instanceof ApiError) throw err;
+      ...remote.exams,
+      list: async () => {
+        await ready();
+        // Süresi dolmuş sınavlar listelenirken kapanır (sunucudaki liste gibi).
+        const now = Date.now();
+        for (const e of await views.listExams()) {
+          if (!e.finishedAt && !e.pausedAt && e.deadline && now > Date.parse(e.deadline) + EXAM_GRACE_MS) {
+            await examAction(e.id, (s) => finishIfExpired(s, now));
           }
         }
-        return local(() => views.getExam(id), () => remote.exams.get(id), "Sınav bulunamadı.");
+        return views.listExams();
+      },
+      get: async (id) => {
+        await ready();
+        return examAction(id, (s) => finishIfExpired(s, Date.now()));
+      },
+      create: async (input) => {
+        const { bookId, sections, durationMin } = validate(createExamSchema, input);
+        const source = await book(bookId);
+        const bookQuestions = [...(await bookSources(bookId)).values()];
+        const track = findSubject(source.subject)?.track ?? "YKS";
+        const state = rules(() => createExamState({ id: newId(), bookId, track, sections, durationMin, bookQuestions, newId, now: Date.now() }));
+        return saveExam(null, state);
+      },
+      answer: async (id, questionId, { answer }) => {
+        const detail = await examAction(id, (s) => answerQuestion(s, questionId, answer, Date.now()));
+        const question = detail.questions.find((q) => q.id === questionId);
+        if (!question) throw new ApiError(404, "Soru bulunamadı.");
+        return question;
+      },
+      finish: (id) => examAction(id, (s) => finishExam(s, Date.now())),
+      pause: (id) => examAction(id, (s) => pauseExam(s, Date.now())),
+      resume: (id) => examAction(id, (s, sources) => resumeExam(s, sources, Date.now())),
+      extend: (id, { minutes }) => examAction(id, (s) => extendExam(s, minutes, Date.now())),
+      sync: (id) => examAction(id, (s, sources) => resyncExam(s, sources)),
+      remove: async (id) => {
+        await change({ type: "examDelete", id });
       },
     },
     results: { ...writes(remote.results), list: () => list(views.listResults) },

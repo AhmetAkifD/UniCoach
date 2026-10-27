@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, View, type StyleProp, type ViewStyle } from "react-native";
 import { spacing } from "@unicoach/design";
 import { type PageFrameHandle } from "@/components/page-frame";
-import { bookPdfSource, PdfPageFrame } from "@/components/pdf-page-frame";
+import { bookPdfSource, pdfErrorText, PdfPageFrame } from "@/components/pdf-page-frame";
 import { Text } from "@/components/ui/text";
 import { API_BASE_URL } from "@/lib/api";
 import { pdfjsAssets } from "@/lib/offline-files";
@@ -60,7 +60,7 @@ export function QuestionView({
           const e = m as QuestionViewEvent;
           if (e.type === "loaded") setReady(true);
           else if (e.type === "shown") setShown(true);
-          else setError(e.message);
+          else setError(pdfErrorText(pdf.file, e.message));
         }}
         style={{ flex: 1 }}
       />

@@ -75,6 +75,12 @@ export class SyncService {
       case "bookQuestions":
         await this.books.saveQuestions(userId, op.bookId, op.input);
         return;
+      case "examState":
+        await this.saveExamState(userId, op);
+        return;
+      case "examDelete":
+        await p.exam.deleteMany({ where: { id: op.id, userId } });
+        return;
       case "notebookCreate": {
         const existing = await p.notebook.findUnique({ where: { id: op.id }, select: { userId: true } });
         if (existing) {
@@ -157,6 +163,55 @@ export class SyncService {
       deleted: tombstones.map((t) => ({ table: t.table as SyncTable, id: t.rowId })),
       serverTime: new Date().toISOString(),
     };
+  }
+
+  /**
+   * Telefonda çözülen sınavın durumu olduğu gibi yazılır (yoksa kurulur). Kaynak sorusu bu arada silinmişse bağlantı
+   * boşalır (sunucudaki SetNull gibi). Kimlikler başka bir sınava/kullanıcıya aitse reddedilir.
+   */
+  private async saveExamState(userId: string, op: Extract<SyncOp, { type: "examState" }>) {
+    const p = this.prisma;
+    const { exam, questions } = op;
+    const owner = await p.exam.findUnique({ where: { id: exam.id }, select: { userId: true } });
+    if (owner && owner.userId !== userId) throw new ConflictException("Sınav kimliği kullanımda.");
+    const book = await p.questionBook.findFirst({ where: { id: exam.bookId, userId }, select: { id: true } });
+    if (!book) throw new NotFoundException("PDF bulunamadı.");
+    const ids = questions.map((q) => q.id);
+    if (await p.examQuestion.count({ where: { id: { in: ids }, examId: { not: exam.id } } })) {
+      throw new ConflictException("Soru kimliği kullanımda.");
+    }
+    const sourceIds = questions.flatMap((q) => (q.bookQuestionId ? [q.bookQuestionId] : []));
+    const sources = new Set(
+      (await p.bookQuestion.findMany({ where: { id: { in: sourceIds }, bookId: exam.bookId }, select: { id: true } })).map((s) => s.id),
+    );
+    const date = (v: string | null) => (v ? new Date(v) : null);
+    const data = {
+      bookId: exam.bookId,
+      title: exam.title,
+      track: exam.track,
+      durationSec: exam.durationSec,
+      extraSec: exam.extraSec,
+      pausedAt: date(exam.pausedAt),
+      pausedMs: exam.pausedMs,
+      startedAt: new Date(exam.startedAt),
+      finishedAt: date(exam.finishedAt),
+      correct: exam.correct,
+      wrong: exam.wrong,
+      blank: exam.blank,
+      net: exam.net,
+    };
+    await p.$transaction(async (tx) => {
+      await tx.exam.upsert({ where: { id: exam.id }, create: { id: exam.id, userId, ...data }, update: data });
+      await tx.examQuestion.deleteMany({ where: { examId: exam.id, id: { notIn: ids } } });
+      for (const { id, ...q } of questions) {
+        const row = {
+          ...q,
+          bookQuestionId: q.bookQuestionId && sources.has(q.bookQuestionId) ? q.bookQuestionId : null,
+          answeredAt: date(q.answeredAt),
+        };
+        await tx.examQuestion.upsert({ where: { id }, create: { id, examId: exam.id, ...row }, update: row });
+      }
+    });
   }
 
   /**

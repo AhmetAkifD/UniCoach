@@ -1,5 +1,5 @@
 import { useImperativeHandle, useRef } from "react";
-import { api, getApiToken } from "@/lib/api";
+import { api, getApiToken, syncEngine } from "@/lib/api";
 import { offlineBook, readBookRange } from "@/lib/offline-files";
 import { LOCAL_CHUNK, type PdfRangeRequest, type PdfSource } from "@/lib/pdfjs-page";
 import { PageFrame, type PageFrameHandle, type PageFrameProps } from "./page-frame";
@@ -8,6 +8,13 @@ import { PageFrame, type PageFrameHandle, type PageFrameProps } from "./page-fra
 export function bookPdfSource(bookId: string): { source: PdfSource; file: { uri: string; size: number } | null } {
   const file = offlineBook(bookId);
   return file ? { source: { size: file.size }, file } : { source: { url: api.books.filePath(bookId), token: getApiToken() }, file: null };
+}
+
+/** PDF açılamadıysa: sunucuya ulaşılamıyor ve PDF cihazda değilse ne yapılacağı söylenir. */
+export function pdfErrorText(file: unknown, message: string): string {
+  return !file && syncEngine.getState().connection === "offline"
+    ? "Bu PDF bu cihaza indirilmemiş. Çevrimdışı açmak için sunucuya bağlıyken PDF bilgilerinden \"Çevrimdışı kullan\"ı aç."
+    : message;
 }
 
 /**

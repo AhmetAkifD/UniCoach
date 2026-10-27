@@ -7,10 +7,10 @@ import type { BookSummary } from "@unicoach/shared";
 import { IconButton } from "@/components/ui/icon-button";
 import { Text } from "@/components/ui/text";
 import { useDialog } from "@/components/ui/use-dialog";
-import { api, syncEngine } from "@/lib/api";
+import { api } from "@/lib/api";
 import type { PdfEvent, PdfFrameHandle } from "@/lib/pdf-viewer";
 import { useTheme } from "@/lib/theme";
-import { bookPdfSource } from "@/components/pdf-page-frame";
+import { bookPdfSource, pdfErrorText } from "@/components/pdf-page-frame";
 import { PdfFrame } from "./pdf-frame";
 
 /** Sayfa değiştikten bu süre sonra kalınan sayfa kaydedilir (kaydırırken her sayfada istek atılmasın). */
@@ -84,12 +84,7 @@ export function BookReader({
   function onEvent(event: PdfEvent) {
     if (event.type === "error") {
       setStatus("error");
-      // Sunucuya ulaşılamıyorsa ve PDF cihazda değilse ne yapacağı söylenir.
-      setError(
-        !pdf.file && syncEngine.getState().connection === "offline"
-          ? "Bu PDF bu cihaza indirilmemiş. Çevrimdışı okumak için sunucuya bağlıyken PDF bilgilerinden \"Çevrimdışı kullan\"ı aç."
-          : event.message,
-      );
+      setError(pdfErrorText(pdf.file, event.message));
     } else if (event.type === "loaded") {
       setStatus("ready");
       setPageCount(event.pageCount);

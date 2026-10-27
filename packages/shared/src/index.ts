@@ -14,3 +14,4 @@ export * from "./question-detect";
 export * from "./question-editing";
 export * from "./yks-result-form";
 export * from "./sync";
+export * from "./exam-engine";
