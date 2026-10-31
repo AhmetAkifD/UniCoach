@@ -46,7 +46,7 @@ export default function AppLayout() {
       <Tabs.Screen name="index" options={{ title: "Ana Sayfa", headerTitle: "UniCoach", tabBarIcon: icon(House) }} />
       <Tabs.Screen name="konular" options={{ title: "Konular", headerTitle: "Konu Anlatımı", tabBarIcon: icon(PlaySquare) }} />
       <Tabs.Screen name="soru-bankasi" options={{ title: "Soru Bankası", tabBarIcon: icon(BookOpenText) }} />
-      <Tabs.Screen name="sinavlar" options={{ title: "Sınavlar", headerTitle: "Geçmiş Sınavlar", tabBarIcon: icon(ClipboardList) }} />
+      <Tabs.Screen name="sinavlar" options={{ title: "Sınavlar", tabBarIcon: icon(ClipboardList) }} />
       <Tabs.Screen name="tercih" options={{ title: "Tercih", headerTitle: "YKS Tercih", tabBarIcon: icon(GraduationCap) }} />
     </Tabs>
   );

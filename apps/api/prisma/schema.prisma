@@ -163,7 +163,7 @@ model BookQuestion {
   @@index([syncVersion])
 }
 
-/// Geçmiş Sınavlar: Soru Bankası'ndan seçilen testlerle kurulan süreli deneme.
+/// Sınavlar: Soru Bankası'ndan seçilen testlerle kurulan süreli deneme.
 model Exam {
   id          String         @id @default(cuid())
   userId      String

@@ -14,7 +14,7 @@ import { useSyncRefresh } from "@/lib/sync";
 
 const openExam = (id: string) => router.push({ pathname: "/sinav/[id]", params: { id } });
 
-/** Geçmiş Sınavlar: devam eden sınavlar ve sonuçlar (web'deki /sinavlar). */
+/** Sınavlar: devam eden sınavlar ve sonuçlar (web'deki /sinavlar). */
 export default function ExamsScreen() {
   const { colors } = useTheme();
   const [exams, setExams] = useState<ExamSummary[] | null>(null);

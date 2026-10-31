@@ -4,7 +4,7 @@ import { calculateNet } from "./net";
 import { CHOICE_LETTERS, type ChoiceLetter } from "./question-bank";
 
 /**
- * Geçmiş Sınavlar: öğrencinin Soru Bankası'nda çıkardığı testlerden kurduğu süreli deneme.
+ * Sınavlar: öğrencinin Soru Bankası'nda çıkardığı testlerden kurduğu süreli deneme.
  * Sınav oluşturulurken sorular (yer + doğru cevap) kopyalanır; kaynak sonradan düzenlense de sonuç bozulmaz.
  * Kaynağa dönüp düzeltmek için soru, kaynak soruya (`bookQuestionId`) bağlı kalır.
  */

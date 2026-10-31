@@ -162,7 +162,7 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       /** PDF dosyasının adresi (GET: indirme/Range ile okuma, PUT: yükleme). */
       filePath: (id: string) => `${base()}/api/books/${encodeURIComponent(id)}/file`,
     },
-    /** Geçmiş Sınavlar: Soru Bankası'nda çıkarılan testlerden süreli deneme. */
+    /** Sınavlar: Soru Bankası'nda çıkarılan testlerden süreli deneme. */
     exams: {
       list: () => request<ExamSummary[]>("/exams", { cache: "no-store" }),
       get: (id: string) => request<ExamDetail>(`/exams/${encodeURIComponent(id)}`, { cache: "no-store" }),

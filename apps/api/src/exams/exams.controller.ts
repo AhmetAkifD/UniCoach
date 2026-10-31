@@ -15,7 +15,7 @@ import { AuthGuard, CurrentUser } from "../auth/auth.guard";
 import { ZodValidationPipe } from "../common/zod-validation.pipe";
 import { ExamsService } from "./exams.service";
 
-/** Geçmiş Sınavlar. Her istek yalnızca giriş yapan öğrencinin sınavlarına erişir. */
+/** Sınavlar. Her istek yalnızca giriş yapan öğrencinin sınavlarına erişir. */
 @Controller("exams")
 @UseGuards(AuthGuard)
 export class ExamsController {

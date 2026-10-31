@@ -14,7 +14,7 @@ export default async function NewExamPage({ searchParams }: { searchParams: Prom
   return (
     <div className="flex flex-col gap-8">
       <Link href="/sinavlar" className="inline-flex items-center gap-1.5 self-start text-sm font-medium text-text-muted hover:text-text">
-        <ArrowLeft className="size-4" aria-hidden /> Geçmiş Sınavlar
+        <ArrowLeft className="size-4" aria-hidden /> Sınavlar
       </Link>
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Yeni sınav</h1>

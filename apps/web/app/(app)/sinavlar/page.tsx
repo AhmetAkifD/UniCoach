@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { formatClock, formatDate } from "@/lib/exam-format";
 import { authedApi } from "@/lib/session";
 
-export const metadata = { title: "Geçmiş Sınavlar" };
+export const metadata = { title: "Sınavlar" };
 
 export default async function ExamsPage() {
   const exams = await (await authedApi()).exams.list();
@@ -18,7 +18,7 @@ export default async function ExamsPage() {
     <div className="flex flex-col gap-8">
       <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Geçmiş Sınavlar</h1>
+          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Sınavlar</h1>
           <p className="text-text-muted">Soru Bankası'nda çıkardığın testlerle süreli deneme çöz, netini gör.</p>
         </div>
         {exams.length > 0 && (

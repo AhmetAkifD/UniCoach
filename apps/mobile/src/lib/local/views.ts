@@ -136,7 +136,7 @@ export async function bookQuestions(id: string): Promise<BookQuestion[]> {
     }));
 }
 
-// --- Geçmiş Sınavlar ---
+// --- Sınavlar ---
 
 function examSummary(e: SyncExam, questions: SyncExamQuestion[], bookTitle: string): ExamSummary {
   const deadline = e.durationSec === null ? null : new Date(Date.parse(e.startedAt) + (e.durationSec + e.extraSec) * 1000 + e.pausedMs);
