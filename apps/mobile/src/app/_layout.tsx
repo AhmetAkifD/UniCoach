@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { View } from "react-native";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -6,7 +6,6 @@ import { StatusBar } from "expo-status-bar";
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from "@expo-google-fonts/inter";
 import { WifiOff } from "lucide-react-native";
 import { spacing } from "@unicoach/design";
-import { PairScanner } from "@/components/pair-scanner";
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { apiBaseUrl } from "@/lib/api";
@@ -56,31 +55,15 @@ function Navigator({ fontsLoaded }: { fontsLoaded: boolean }) {
         <Stack.Protected guard={status === "signedOut"}>
           <Stack.Screen name="giris" />
         </Stack.Protected>
-        {/* QR ile bağlan: giriş ekranından da Profil'den de açılır. */}
-        <Stack.Screen name="eslestir" options={{ presentation: "modal" }} />
       </Stack>
     </>
   );
 }
 
-/** Kayıtlı oturum var ama API'ye ulaşılamadı (ve bu cihazda son bilinen kullanıcı yok). Adres yanlışsa QR ile eşlenir. */
+/** Kayıtlı oturum var ama API'ye ulaşılamadı (ve bu cihazda son bilinen kullanıcı yok). */
 function Offline() {
   const { retry, signOut } = useSession();
   const { colors } = useTheme();
-  const [scanning, setScanning] = useState(false);
-  if (scanning) {
-    return (
-      <View style={{ flex: 1, backgroundColor: colors.bg, justifyContent: "center", padding: spacing[6], gap: spacing[4] }}>
-        <Text size="lg" weight="semibold">
-          QR ile bağlan
-        </Text>
-        <PairScanner onDone={() => setScanning(false)} />
-        <Button variant="ghost" onPress={() => setScanning(false)}>
-          Vazgeç
-        </Button>
-      </View>
-    );
-  }
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center", padding: spacing[6], gap: spacing[4] }}>
       <WifiOff size={40} color={colors.textSubtle} strokeWidth={1.75} />
@@ -91,9 +74,6 @@ function Offline() {
         Telefonun ve bilgisayarın aynı Wi‑Fi ağında olmalı ve API çalışıyor olmalı.{"\n"}Adres: {apiBaseUrl()}
       </Text>
       <Button onPress={retry}>Tekrar dene</Button>
-      <Button variant="secondary" onPress={() => setScanning(true)}>
-        QR ile bağlan
-      </Button>
       <Button variant="ghost" size="sm" onPress={() => void signOut()}>
         Çıkış yap
       </Button>

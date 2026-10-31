@@ -1,7 +1,6 @@
 import { useRef, useState } from "react";
 import { Pressable, View } from "react-native";
-import { router } from "expo-router";
-import { CircleAlert, CircleCheck, GraduationCap, Pencil, QrCode } from "lucide-react-native";
+import { CircleAlert, CircleCheck, GraduationCap, Pencil } from "lucide-react-native";
 import {
   ApiError,
   EXAM_TRACK_LABELS,
@@ -202,10 +201,6 @@ export default function SignIn() {
           </>
         )}
       </View>
-      {/* Bilgisayardaki UniCoach'un Profil → Telefonu eşle kodu: sunucu adresini ve oturumu birlikte getirir. */}
-      <Button variant="ghost" icon={<QrCode size={18} color={colors.text} />} onPress={() => router.push("/eslestir")}>
-        QR ile bağlan
-      </Button>
     </Screen>
   );
 }

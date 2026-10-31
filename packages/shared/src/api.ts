@@ -43,7 +43,7 @@ import type {
   NotePageRef,
   SaveNotePageInput,
 } from "./notebooks";
-import type { PairResponse, SyncPullResponse, SyncPushInput, SyncPushResponse } from "./sync";
+import type { SyncPullResponse, SyncPushInput, SyncPushResponse } from "./sync";
 
 export const USER_ROLES = ["STUDENT", "ADMIN"] as const;
 export type UserRole = (typeof USER_ROLES)[number];
@@ -125,7 +125,6 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
        */
       removeAvatar: () => send<AuthUser>("DELETE", "/auth/me/avatar"),
       /** Telefonu eşlemek için oturum ve bilgisayarın yerel ağ adresleri (web Profil'deki QR kod) */
-      pair: () => post<PairResponse>("/auth/pair", {}),
       get avatarPath() {
         return `${base()}/api/auth/me/avatar`;
       },

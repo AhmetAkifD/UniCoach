@@ -34,13 +34,7 @@
           "photosPermission": "Profil fotoğrafı seçmek için fotoğraflarına erişmemize izin ver."
         }
       ],
-      "expo-sqlite",
-      [
-        "expo-camera",
-        {
-          "cameraPermission": "Bilgisayarındaki UniCoach'un eşleme kodunu (QR) okutmak için kameraya erişmemize izin ver."
-        }
-      ]
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true

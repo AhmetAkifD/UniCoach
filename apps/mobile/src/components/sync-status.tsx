@@ -1,6 +1,6 @@
 import { Pressable, View } from "react-native";
 import { router } from "expo-router";
-import { CloudOff, QrCode, RefreshCw } from "lucide-react-native";
+import { CloudOff, RefreshCw } from "lucide-react-native";
 import { spacing } from "@unicoach/design";
 import { formatDate } from "@unicoach/shared";
 import { Button } from "@/components/ui/button";
@@ -50,15 +50,6 @@ export function SyncStatusCard() {
         style={{ alignSelf: "flex-start" }}
       >
         Şimdi eşitle
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        icon={<QrCode size={16} color={colors.text} />}
-        onPress={() => router.push("/eslestir")}
-        style={{ alignSelf: "flex-start" }}
-      >
-        QR ile yeniden eşle
       </Button>
     </Card>
   );

@@ -16,14 +16,9 @@ function resolveBaseUrl(): string {
   return `http://${host ?? "localhost"}:4000`;
 }
 
-/** Kurulumun varsayılan adresi (yukarıdaki kurallar); QR ile eşlenince eşlenen adres kullanılır. */
-export const DEFAULT_API_URL = resolveBaseUrl();
-let apiUrl = DEFAULT_API_URL;
-/** Şu anki sunucu adresi (eşleme değiştirebilir; lib/session.tsx açılışta saklananı yükler). */
-export const apiBaseUrl = () => apiUrl;
-export const setApiBaseUrl = (url: string | null) => {
-  apiUrl = url ? url.replace(/\/$/, "") : DEFAULT_API_URL;
-};
+const API_URL = resolveBaseUrl();
+/** Sunucu adresi (yukarıdaki kurallar). */
+export const apiBaseUrl = () => API_URL;
 
 /** Oturum belirteci bellekte tutulur; kalıcı kopyası SecureStore'dadır (lib/session.tsx). */
 let token: string | null = null;

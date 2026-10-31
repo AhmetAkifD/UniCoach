@@ -1,16 +1,14 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
-import { ApiError, type AuthUser, type PairCode } from "@unicoach/shared";
-import { remoteApi as api, apiBaseUrl, getApiToken, setApiBaseUrl, setApiToken, syncEngine } from "./api";
+import { ApiError, type AuthUser } from "@unicoach/shared";
+import { remoteApi as api, getApiToken, setApiToken, syncEngine } from "./api";
 import { deviceStore } from "./storage";
 import { withTimeout } from "./timeout";
 
 const TOKEN_KEY = "uc_session";
 /** Son bilinen kullanıcı: sunucuya ulaşılamazken uygulama bununla açılır. */
 const USER_KEY = "uc_user";
-/** QR ile eşlenen sunucu adresi (yoksa kurulumun varsayılanı) */
-const API_URL_KEY = "uc_api_url";
 /** Açılışta sunucu bu sürede yanıt vermezse çevrimdışı açılır. */
 const ME_TIMEOUT_MS = 6000;
 
@@ -36,8 +34,6 @@ interface Session {
   expired: boolean;
   /** Giriş: belirteç saklanır, kullanıcı bilgisi yerleşir. Başka hesapsa bu cihazdaki kopya silinir. */
   signIn: (token: string, user: AuthUser) => Promise<void>;
-  /** Web'deki QR kodla eşleme: sunucu adresi saklanır, koddaki oturumla giriş yapılır. */
-  pair: (code: PairCode) => Promise<AuthUser>;
   signOut: () => Promise<void>;
   /** Profil değişince güncel kullanıcıyı yerleştirir (verilmezse API'den okunur). */
   refresh: (user?: AuthUser) => Promise<void>;
@@ -48,8 +44,7 @@ interface Session {
 const SessionContext = createContext<Session | null>(null);
 
 /**
- * Oturum: JWT (7 gün) cihazda güvenli depoda tutulur, açılışta `GET /api/auth/me` ile doğrulanır. Sunucu adresi
- * QR ile eşlendiyse o kullanılır. Belirteç geçersizse (401: uzun süre çevrimdışı kalınca süresi dolmuş olabilir)
+ * Oturum: JWT (7 gün) cihazda güvenli depoda tutulur, açılışta `GET /api/auth/me` ile doğrulanır. Belirteç geçersizse (401: uzun süre çevrimdışı kalınca süresi dolmuş olabilir)
  * yeniden giriş istenir ama yerel kopya ve gönderilmemiş değişiklikler silinmez: aynı hesapla girince gönderilir.
  * Kopya yalnızca çıkışta ya da başka hesapla girişte silinir. API'ye ulaşılamıyorsa son bilinen kullanıcıyla
  * çevrimdışı açılır (yoksa "Sunucuya ulaşılamadı" ekranı).
@@ -69,7 +64,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const load = useCallback(async () => {
-    setApiBaseUrl(await deviceStore.get<string>(API_URL_KEY));
     const saved = await storage.get().catch(() => null);
     if (!saved) {
       setStatus("signedOut");
@@ -131,21 +125,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       user,
       expired,
       signIn,
-      pair: async (code) => {
-        const previous = { url: apiBaseUrl(), token: getApiToken() };
-        setApiBaseUrl(code.url);
-        setApiToken(code.token);
-        try {
-          const me = await withTimeout(api.auth.me(), ME_TIMEOUT_MS);
-          deviceStore.set(API_URL_KEY, code.url);
-          await signIn(code.token, me);
-          return me;
-        } catch (err) {
-          setApiBaseUrl(previous.url);
-          setApiToken(previous.token);
-          throw err;
-        }
-      },
       signOut: async () => {
         setApiToken(null);
         await storage.remove().catch(() => undefined);

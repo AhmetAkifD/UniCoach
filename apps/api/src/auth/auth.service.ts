@@ -1,5 +1,4 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
-import { networkInterfaces } from "node:os";
 import path from "node:path";
 import {
   BadRequestException,
@@ -20,7 +19,6 @@ import {
   type CheckEmailResponse,
   type ThemePreference,
   type LoginInput,
-  type PairResponse,
   type RegisterInput,
   type UpdateProfileInput,
 } from "@unicoach/shared";
@@ -156,21 +154,6 @@ export class AuthService {
   async findUser(id: string): Promise<AuthUser | null> {
     const user = await this.prisma.user.findUnique({ where: { id } });
     return user ? toAuthUser(user) : null;
-  }
-
-  /**
-   * Telefonu eşleme: telefona ayrı bir oturum ve bu bilgisayarın yerel ağ adresleri. `PUBLIC_API_URL` verilmişse o
-   * önce gelir (ör. Docker'da konteynerin adresleri telefona bir şey ifade etmez). Ev ağlarındaki adresler önce.
-   */
-  async pair(userId: string): Promise<PairResponse> {
-    const port = Number(process.env.API_PORT ?? 4000);
-    const lan = Object.values(networkInterfaces())
-      .flat()
-      .flatMap((n) => (n && n.family === "IPv4" && !n.internal ? [n.address] : []));
-    const rank = (ip: string) => (ip.startsWith("192.168.") ? 0 : ip.startsWith("10.") ? 1 : /^172\.(1[6-9]|2\d|3[01])\./.test(ip) ? 2 : 3);
-    const urls = [...new Set(lan)].sort((a, b) => rank(a) - rank(b)).map((ip) => `http://${ip}:${port}`);
-    const extra = process.env.PUBLIC_API_URL?.replace(/\/$/, "");
-    return { token: await this.jwt.signAsync({ sub: userId } satisfies JwtPayload), urls: extra ? [extra, ...urls.filter((u) => u !== extra)] : urls };
   }
 
   private async issue(user: User): Promise<AuthResponse> {

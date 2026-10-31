@@ -278,35 +278,3 @@ export interface SyncPushResponse {
   /** Uygulanamayan işlemler (ör. başka cihazda silinmiş deftere yazı); telefon bunları kuyruktan atar. */
   rejected: { index: number; reason: string }[];
 }
-
-// --- Telefonu eşleme (QR) ---
-
-/** POST /api/auth/pair — telefona verilecek oturum ve bilgisayarın yerel ağ adresleri (en olası önce). */
-export interface PairResponse {
-  token: string;
-  urls: string[];
-}
-
-/**
- * QR kodun içeriği: sunucunun adresi ve telefonun oturumu. Telefon okutunca bu adresi saklar (eve dönünce aynı
- * adrese bağlanır) ve oturumla giriş yapar. Kod bir oturum taşıdığı için kimseyle paylaşılmamalı.
- */
-export interface PairCode {
-  v: 1;
-  url: string;
-  token: string;
-}
-
-export const pairCodeText = (code: Omit<PairCode, "v">): string => JSON.stringify({ v: 1, url: code.url, token: code.token });
-
-/** QR'dan okunan metin geçerli bir eşleme koduysa çözer. */
-export function parsePairCode(text: string): PairCode | null {
-  try {
-    const value = JSON.parse(text) as Partial<PairCode>;
-    if (value.v !== 1 || typeof value.url !== "string" || typeof value.token !== "string") return null;
-    if (!/^https?:\/\/[^\s/]+(:\d+)?\/?$/.test(value.url) || !value.token) return null;
-    return { v: 1, url: value.url.replace(/\/$/, ""), token: value.token };
-  } catch {
-    return null;
-  }
-}
