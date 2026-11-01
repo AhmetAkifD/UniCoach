@@ -100,7 +100,7 @@ function AddSourceDialog({ examTrack, onClose }: { examTrack: ExamTrack | null; 
               Kaynak ekle
             </h2>
             <p className="text-sm text-text-muted">
-              Bir YouTube videosu ya da oynatma listesi ekle. Liste, YouTube'daki sırasıyla bir grup olarak durur.
+              Bir YouTube videosu ya da oynatma listesi ekle.
             </p>
           </div>
           <button

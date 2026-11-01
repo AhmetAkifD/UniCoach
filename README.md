@@ -25,6 +25,20 @@ docker compose up --build
 
 Oturum belirteçleri `JWT_SECRET` ile imzalanır. Compose'ta yerel kullanım için bir varsayılan değer vardır; gerçek bir sunucuda `JWT_SECRET=... docker compose up` ile değiştirin.
 
+## Kur ve başlat (Windows, Docker'sız)
+
+Klasördeki `UniCoach-Kur-ve-Baslat.cmd`'ye çift tıkla. İlk çalıştırmada indirilecekleri (Node.js, PostgreSQL, npm kütüphaneleri, Prisma motoru, yazı tipi; gerekirse Visual C++ çalışma zamanı) kaynakları, boyutları ve kayıt yerleriyle listeler ve onay ister. Onaylanınca hepsini klasörün içine (`kurulum/indirilenler`, `kurulum/araclar`, `kurulum/onbellek`, `node_modules`) indirir, siteyi derler ve tarayıcıda http://localhost:3000 açar. Sonraki çalıştırmalarda yalnızca başlatır. Neyin nereye indiği ekranda ve masaüstündeki `UniCoach-kurulum-gunlugu.txt`'de yazar. Veriler `veri` klasöründedir. Yönetici izni yalnızca Visual C++ çalışma zamanı eksikse istenir.
+
+## Taşınabilir Windows paketi (kurulumsuz)
+
+Docker, Node.js ya da PostgreSQL kurulu olmayan bir Windows bilgisayarda çalışan tek klasör:
+
+```bash
+node scripts/build-portable.mjs
+```
+
+Masaüstünde `UniCoach-tasinabilir.zip` oluşur. Açılan klasördeki `UniCoach.cmd`'ye çift tıklamak veritabanını, API'yi ve web sitesini başlatır, tarayıcıda http://localhost:3000 açılır. Veriler klasörün içindeki `veri` dizinindedir. Paket, derlenen bilgisayardaki Node.js ve PostgreSQL 18 kurulumundan hazırlanır.
+
 ## Geliştirme
 
 Gereksinimler: Node.js 22+ ve PostgreSQL (doğrudan kurulu ya da Docker ile).
@@ -79,7 +93,7 @@ npm run mobile
 - **Telefon:** Expo Go ile QR kodu okutun. Telefon ve bilgisayar aynı Wi‑Fi ağında olmalı, Windows güvenlik duvarı 4000 portuna izin vermeli. Uygulama SDK 58 kullanır; Play Store'daki Expo Go henüz bu sürümü desteklemiyorsa emülatörü kullanın.
 - Tarayıcı önizlemesi: `npm run web -w @unicoach/mobile` (http://localhost:8081).
 
-Mobilde web'deki bütün modüller var: giriş, ana sayfa, profil, Konu Anlatımı, Soru Bankası (PDF yükleme, okuma ve soru çıkarma), Çalışma Alanı (video, PDF ve not defteri alt alta), Geçmiş Sınavlar ve YKS Tercih.
+Mobilde web'deki bütün modüller var: giriş, ana sayfa, profil, Konu Anlatımı, Soru Bankası (PDF yükleme, okuma ve soru çıkarma), Çalışma Alanı (video, PDF ve not defteri alt alta), Sınavlar ve YKS Tercih. Telefon verilerinin bir kopyasını kendinde tutar: bilgisayardaki sunucuya ulaşılamadığında (okulda, yolda) da verilerini görebilirsin; aynı ağa dönünce kendiliğinden eşitlenir. Çevrimdışıyken not alabilir, video izleyip PDF okuyabilirsin; notların, izleme ilerlemen ve kaldığın sayfa telefona kaydedilir, eve dönünce sunucuya gönderilir (aynı sayfaya iki cihazda yazılanlar birleştirilir). İstediğin PDF'i "Çevrimdışı kullan" ile telefona indirirsen internet yokken de okuyabilir, soru çıkarabilir ve sınav çözebilirsin.
 
 ## Mimari
 

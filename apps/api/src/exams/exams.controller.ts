@@ -9,13 +9,14 @@ import {
   type ExamDetail,
   type ExamQuestion,
   type ExamSummary,
+  type ExamTodayStats,
   type ExtendExamInput,
 } from "@unicoach/shared";
 import { AuthGuard, CurrentUser } from "../auth/auth.guard";
 import { ZodValidationPipe } from "../common/zod-validation.pipe";
 import { ExamsService } from "./exams.service";
 
-/** Geçmiş Sınavlar. Her istek yalnızca giriş yapan öğrencinin sınavlarına erişir. */
+/** Sınavlar. Her istek yalnızca giriş yapan öğrencinin sınavlarına erişir. */
 @Controller("exams")
 @UseGuards(AuthGuard)
 export class ExamsController {
@@ -24,6 +25,11 @@ export class ExamsController {
   @Get()
   list(@CurrentUser() user: AuthUser): Promise<ExamSummary[]> {
     return this.exams.list(user.id);
+  }
+
+  @Get("today")
+  today(@CurrentUser() user: AuthUser): Promise<ExamTodayStats> {
+    return this.exams.today(user.id);
   }
 
   @Post()

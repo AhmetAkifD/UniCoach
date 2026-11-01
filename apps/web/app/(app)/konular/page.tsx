@@ -29,7 +29,7 @@ export default async function LibraryPage({
       <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Konu Anlatımı</h1>
-          <p className="text-text-muted">Takip ettiğin YouTube videoları ve oynatma listeleri, derslerine göre.</p>
+          <p className="text-text-muted">Takip ettiğin hocaları bir arada gör.</p>
         </div>
         {sources.length > 0 && <AddSourceButton examTrack={user.examTrack} />}
       </section>

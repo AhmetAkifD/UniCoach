@@ -21,7 +21,7 @@ export default async function PreferenceListPage() {
           Programları öncelik sırana koy. Puanına ya da koşullarına uymayan programlar listede kalır, yalnızca uyarı
           görürsün.
           {latest &&
-            ` ${latest.year} sonucun, her programın sonuç yılına en yakın yılının taban sırasıyla karşılaştırılır; o yıl vurgulanır.`}
+            " Sınav sonucun, her programın sonuç yılına en yakın yılının taban sırasıyla karşılaştırılır; o yıl vurgulanır."}
         </p>
       </div>
       <PreferenceList initialItems={items} scores={latest?.scores ?? null} resultYear={latest?.year ?? null} />

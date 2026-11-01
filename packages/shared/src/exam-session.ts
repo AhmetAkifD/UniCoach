@@ -4,7 +4,7 @@ import { calculateNet } from "./net";
 import { CHOICE_LETTERS, type ChoiceLetter } from "./question-bank";
 
 /**
- * Geçmiş Sınavlar: öğrencinin Soru Bankası'nda çıkardığı testlerden kurduğu süreli deneme.
+ * Sınavlar: öğrencinin Soru Bankası'nda çıkardığı testlerden kurduğu süreli deneme.
  * Sınav oluşturulurken sorular (yer + doğru cevap) kopyalanır; kaynak sonradan düzenlense de sonuç bozulmaz.
  * Kaynağa dönüp düzeltmek için soru, kaynak soruya (`bookQuestionId`) bağlı kalır.
  */
@@ -77,6 +77,18 @@ export interface ExamSummary {
   wrong: number | null;
   blank: number | null;
   net: number | null;
+}
+
+/** GET /api/exams/today — ana sayfadaki "Bugün çözülen soru sayısı" kartı. */
+export interface ExamTodayStats {
+  /** Bugün (cihazın/sunucunun yerel gününde) cevaplanan sınav soruları; boş bırakılanlar sayılmaz. */
+  solved: number;
+}
+
+/** Bugün cevaplanan soru sayısı; `answeredAt` yerel günün başından sonraysa sayılır. Sunucu ve telefon aynısını kullanır. */
+export function solvedToday(questions: { answer: string | null; answeredAt: string | Date | null }[], now = new Date()): number {
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  return questions.filter((q) => q.answer && q.answeredAt && new Date(q.answeredAt).getTime() >= start).length;
 }
 
 export interface ExamQuestion {

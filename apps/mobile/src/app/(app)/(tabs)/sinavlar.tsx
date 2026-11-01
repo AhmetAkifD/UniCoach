@@ -10,10 +10,11 @@ import { Card, PressableCard } from "@/components/ui/card";
 import { Text } from "@/components/ui/text";
 import { api } from "@/lib/api";
 import { useTheme } from "@/lib/theme";
+import { useSyncRefresh } from "@/lib/sync";
 
 const openExam = (id: string) => router.push({ pathname: "/sinav/[id]", params: { id } });
 
-/** Geçmiş Sınavlar: devam eden sınavlar ve sonuçlar (web'deki /sinavlar). */
+/** Sınavlar: devam eden sınavlar ve sonuçlar (web'deki /sinavlar). */
 export default function ExamsScreen() {
   const { colors } = useTheme();
   const [exams, setExams] = useState<ExamSummary[] | null>(null);
@@ -29,6 +30,8 @@ export default function ExamsScreen() {
     }
   }, []);
 
+  // Arka planda eşitleme veriyi değiştirince (ör. web'de yapılan değişiklik) yeniden okunur.
+  useSyncRefresh(() => void load());
   // Sekmeye her dönüşte (sınav çözüp gelince) yenilenir.
   useFocusEffect(
     useCallback(() => {

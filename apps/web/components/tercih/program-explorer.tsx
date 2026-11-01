@@ -310,9 +310,7 @@ export function ProgramExplorer({
         </div>
         {myRank ? (
           <p className="text-xs text-text-subtle">
-            {filters.scoreType && RESULT_SCORE_LABELS[filters.scoreType]} yerleştirme sıran {formatRank(myRank)}
-            {resultYear ? ` (${resultYear} sonucun)` : ""}. Programlar, sonuç yılına en yakın yılın taban sırasıyla
-            karşılaştırılır; tabloda o yıl vurgulanır. Karşılaştırma yalnızca fikir verir.
+            Programlar, sonuç yılına en yakın yılın taban sırasıyla karşılaştırılır; tabloda o yıl vurgulanır. Karşılaştırma yalnızca fikir verir.
           </p>
         ) : filters.scoreType ? (
           <p className="text-xs text-text-subtle">Bu puan türünde kayıtlı yerleştirme sıran yok; karşılaştırma gösterilmez.</p>

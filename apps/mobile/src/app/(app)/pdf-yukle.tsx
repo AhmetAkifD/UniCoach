@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { Screen } from "@/components/ui/screen";
 import { Text } from "@/components/ui/text";
-import { api } from "@/lib/api";
+import { api, syncEngine } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { useTheme } from "@/lib/theme";
 import { UploadCancelled, uploadBookFile, type PickedPdf, type UploadHandle } from "@/lib/upload";
@@ -74,6 +74,8 @@ export default function UploadBookScreen() {
       uploadRef.current = uploadBookFile(book.id, pdf, setSent);
       await uploadRef.current.promise;
       uploadRef.current = null;
+      // Dosya API dışından gönderildiği için yeni PDF'i telefondaki kopyaya almak üzere eşitlenir.
+      await syncEngine.sync();
       router.replace({ pathname: "/pdf/[id]", params: { id: book.id } });
     } catch (err) {
       uploadRef.current = null;

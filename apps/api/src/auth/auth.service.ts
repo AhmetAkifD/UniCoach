@@ -105,6 +105,8 @@ export class AuthService {
     await this.verified(userId, password, "Şifren hatalı.");
     const books = await this.prisma.questionBook.findMany({ where: { userId }, select: { id: true } });
     await this.prisma.user.delete({ where: { id: userId } });
+    // Silme tetikleyicilerinin yazdığı eşitleme izleri de gider (hesap yok, okuyacak cihaz da yok).
+    await this.prisma.syncTombstone.deleteMany({ where: { userId } });
     await Promise.all([...books.map((b) => removeBookFiles(b.id)), rm(avatarFile(userId), { force: true })]);
   }
 

@@ -72,8 +72,71 @@ const title = z.string().trim().min(1, { error: "Deftere bir ad ver." }).max(80,
 export const notebookInputSchema = z.object({ title });
 /** POST /api/notebooks/:id/pages — boşsa en sona eklenir */
 export const addNotePageSchema = z.object({ afterPageId: z.string().min(1).nullable() });
-/** PUT /api/notebooks/:id/pages/:pageId */
-export const saveNotePageSchema = z.object({ content: notePageContentSchema });
+/**
+ * Sayfadaki değişiklik: eklenen ya da değişen çizgi/metin kutuları (kimliğiyle) ve silinenlerin kimlikleri.
+ * Kayıtlar bu farkla yapılır, sunucu farkı kendi elindeki sayfaya uygular: iki cihazda aynı sayfaya yazılsa da
+ * ikisinin çizdikleri korunur, yalnızca gerçekten silinenler silinir (kullanıcı kararı: notlar birleştirilir).
+ */
+export const notePageDiffSchema = z.object({
+  strokes: z.array(noteStrokeSchema).max(5000),
+  texts: z.array(noteTextSchema).max(500),
+  deleted: z.array(z.string().min(1).max(40)).max(5500),
+});
+export type NotePageDiff = z.infer<typeof notePageDiffSchema>;
+
+export const EMPTY_NOTE_DIFF: NotePageDiff = { strokes: [], texts: [], deleted: [] };
+
+/** `base`ten `next`e fark: yeni ya da değişmiş öğeler ve `base`te olup `next`te olmayanlar. */
+export function notePageDiff(base: NotePageContent, next: NotePageContent): NotePageDiff {
+  const changed = <T extends { id: string }>(before: T[], after: T[]) => {
+    const old = new Map(before.map((item) => [item.id, JSON.stringify(item)]));
+    return after.filter((item) => old.get(item.id) !== JSON.stringify(item));
+  };
+  const kept = new Set([...next.strokes, ...next.texts].map((item) => item.id));
+  return {
+    strokes: changed(base.strokes, next.strokes),
+    texts: changed(base.texts, next.texts),
+    deleted: [...base.strokes, ...base.texts].filter((item) => !kept.has(item.id)).map((item) => item.id),
+  };
+}
+
+export const isEmptyNoteDiff = (diff: NotePageDiff) => !diff.strokes.length && !diff.texts.length && !diff.deleted.length;
+
+/** Farkı sayfaya uygular: silinenler çıkar, var olan öğe yerinde güncellenir, yenisi sona eklenir (çizim sırası korunur). */
+export function applyNotePageDiff(content: NotePageContent, diff: NotePageDiff): NotePageContent {
+  const deleted = new Set(diff.deleted);
+  const upsert = <T extends { id: string }>(list: T[], changes: T[]) => {
+    const byId = new Map(changes.map((item) => [item.id, item]));
+    const out = list.filter((item) => !deleted.has(item.id)).map((item) => byId.get(item.id) ?? item);
+    const present = new Set(out.map((item) => item.id));
+    return [...out, ...changes.filter((item) => !present.has(item.id) && !deleted.has(item.id))];
+  };
+  return { strokes: upsert(content.strokes, diff.strokes), texts: upsert(content.texts, diff.texts) };
+}
+
+/** Art arda iki fark tek farka (önce `a`, sonra `b`): gönderilmeyi bekleyen kayıtlar birleşir. */
+export function mergeNoteDiffs(a: NotePageDiff, b: NotePageDiff): NotePageDiff {
+  const removed = new Set(b.deleted);
+  const upsert = <T extends { id: string }>(first: T[], second: T[]) => {
+    const byId = new Map(first.filter((item) => !removed.has(item.id)).map((item) => [item.id, item]));
+    for (const item of second) byId.set(item.id, item);
+    return [...byId.values()];
+  };
+  const added = new Set([...b.strokes, ...b.texts].map((item) => item.id));
+  return {
+    strokes: upsert(a.strokes, b.strokes),
+    texts: upsert(a.texts, b.texts),
+    deleted: [...new Set([...a.deleted.filter((id) => !added.has(id)), ...b.deleted])],
+  };
+}
+
+/**
+ * PUT /api/notebooks/:id/pages/:pageId — ya bütün sayfa (`content`, üzerine yazar) ya da fark (`diff`, sunucudaki
+ * sayfayla birleşir). Web ve mobil fark gönderir.
+ */
+export const saveNotePageSchema = z
+  .object({ content: notePageContentSchema.optional(), diff: notePageDiffSchema.optional() })
+  .refine((v) => (v.content ? 1 : 0) + (v.diff ? 1 : 0) === 1, { error: "Sayfa ya da fark gönderilmeli." });
 
 export type NotebookInput = z.infer<typeof notebookInputSchema>;
 export type AddNotePageInput = z.infer<typeof addNotePageSchema>;

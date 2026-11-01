@@ -13,6 +13,7 @@ import { api } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { subjectColor } from "@/lib/subject-color";
 import { useTheme } from "@/lib/theme";
+import { useSyncRefresh } from "@/lib/sync";
 
 /** Soru Bankası: öğrencinin soru kitabı PDF'leri, derslere ve konulara göre (web'deki /soru-bankasi). */
 export default function QuestionBankScreen() {
@@ -32,6 +33,8 @@ export default function QuestionBankScreen() {
     }
   }, []);
 
+  // Arka planda eşitleme veriyi değiştirince (ör. web'de yapılan değişiklik) yeniden okunur.
+  useSyncRefresh(() => void load());
   // Sekmeye her dönüşte (PDF yükleyip ya da okuyup gelince) kalınan sayfalar yenilenir.
   useFocusEffect(
     useCallback(() => {
@@ -85,7 +88,7 @@ export default function QuestionBankScreen() {
       }
     >
       <View style={{ gap: spacing[4] }}>
-        <Text tone="textMuted">Soru kitaplarının PDF'leri, derslerine ve konularına göre.</Text>
+        <Text tone="textMuted">Kaynaklarını derslere ayrılmış şekilde görüntüle.</Text>
         {books.length > 0 && (
           <Button icon={<Plus size={20} color={colors.onPrimary} />} onPress={upload} style={{ alignSelf: "flex-start" }}>
             PDF yükle

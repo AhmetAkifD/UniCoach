@@ -7,5 +7,6 @@ import { NotebooksService } from "./notebooks.service";
   imports: [AuthModule],
   controllers: [NotebooksController],
   providers: [NotebooksService],
+  exports: [NotebooksService],
 })
 export class NotebooksModule {}

@@ -8,7 +8,7 @@ import { WifiOff } from "lucide-react-native";
 import { spacing } from "@unicoach/design";
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
-import { API_BASE_URL } from "@/lib/api";
+import { apiBaseUrl } from "@/lib/api";
 import { SessionProvider, useSession } from "@/lib/session";
 import { ThemeProvider, useTheme } from "@/lib/theme";
 
@@ -60,7 +60,7 @@ function Navigator({ fontsLoaded }: { fontsLoaded: boolean }) {
   );
 }
 
-/** Kayıtlı oturum var ama API'ye ulaşılamadı. */
+/** Kayıtlı oturum var ama API'ye ulaşılamadı (ve bu cihazda son bilinen kullanıcı yok). */
 function Offline() {
   const { retry, signOut } = useSession();
   const { colors } = useTheme();
@@ -71,7 +71,7 @@ function Offline() {
         Sunucuya ulaşılamadı
       </Text>
       <Text size="sm" tone="textMuted" style={{ textAlign: "center" }}>
-        Telefonun ve bilgisayarın aynı Wi‑Fi ağında olmalı ve API çalışıyor olmalı.{"\n"}Adres: {API_BASE_URL}
+        Telefonun ve bilgisayarın aynı Wi‑Fi ağında olmalı ve API çalışıyor olmalı.{"\n"}Adres: {apiBaseUrl()}
       </Text>
       <Button onPress={retry}>Tekrar dene</Button>
       <Button variant="ghost" size="sm" onPress={() => void signOut()}>

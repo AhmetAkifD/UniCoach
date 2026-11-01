@@ -3,7 +3,7 @@
     "name": "UniCoach",
     "slug": "unicoach",
     "scheme": "unicoach",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -33,7 +33,8 @@
         {
           "photosPermission": "Profil fotoğrafı seçmek için fotoğraflarına erişmemize izin ver."
         }
-      ]
+      ],
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true

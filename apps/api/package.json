@@ -1,6 +1,6 @@
 {
   "name": "@unicoach/api",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "UniCoach REST API (NestJS + PostgreSQL/Prisma) — web ve mobilin ortak backend'i",
   "scripts": {

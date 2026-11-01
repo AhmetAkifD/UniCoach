@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, View, type StyleProp, type ViewStyle } from "react-native";
 import { spacing } from "@unicoach/design";
-import { PageFrame, type PageFrameHandle } from "@/components/page-frame";
+import { type PageFrameHandle } from "@/components/page-frame";
+import { bookPdfSource, pdfErrorText, PdfPageFrame } from "@/components/pdf-page-frame";
 import { Text } from "@/components/ui/text";
-import { API_BASE_URL, api, getApiToken } from "@/lib/api";
+import { apiBaseUrl } from "@/lib/api";
+import { pdfjsAssets } from "@/lib/offline-files";
 import { questionViewHtml, type QuestionBox, type QuestionViewEvent } from "@/lib/question-view-page";
 import { useTheme } from "@/lib/theme";
 
@@ -27,8 +29,10 @@ export function QuestionView({
   const [ready, setReady] = useState(false);
   const [shown, setShown] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const pdf = useMemo(() => bookPdfSource(bookId), []);
   const html = useMemo(
-    () => questionViewHtml({ url: api.books.filePath(bookId), token: getApiToken(), background: colors.surfaceMuted }),
+    () => questionViewHtml({ source: pdf.source, background: colors.surfaceMuted }, pdfjsAssets()),
     // Sayfa yalnızca ilk açılışta kurulur.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
@@ -46,16 +50,17 @@ export function QuestionView({
 
   return (
     <View style={[{ backgroundColor: colors.surfaceMuted }, style]}>
-      <PageFrame
+      <PdfPageFrame
         ref={frameRef}
+        file={pdf.file}
         html={html}
-        baseUrl={`${API_BASE_URL}/`}
+        baseUrl={`${apiBaseUrl()}/`}
         background={colors.surfaceMuted}
         onMessage={(m) => {
           const e = m as QuestionViewEvent;
           if (e.type === "loaded") setReady(true);
           else if (e.type === "shown") setShown(true);
-          else setError(e.message);
+          else setError(pdfErrorText(pdf.file, e.message));
         }}
         style={{ flex: 1 }}
       />

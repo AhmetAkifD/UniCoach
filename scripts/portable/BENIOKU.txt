@@ -1,0 +1,28 @@
+UniCoach — taşınabilir sürüm (Windows 10/11, 64 bit)
+====================================================
+
+Kurulum gerekmez. Node.js, PostgreSQL ya da Docker yüklü olması gerekmez;
+hepsi bu klasörün içindedir.
+
+Başlatmak:
+  "UniCoach.cmd" dosyasına çift tıkla. Siyah bir pencere açılır, ilk açılışta
+  veritabanı hazırlanır (birkaç saniye), ardından tarayıcıda
+  http://localhost:3000 kendiliğinden açılır.
+
+Kapatmak:
+  Siyah pencereyi kapat ya da pencerede Ctrl+C'ye bas.
+
+Veriler:
+  Hesaplar, PDF'ler ve notlar "veri" klasöründe durur. Klasörü başka bir
+  bilgisayara kopyalarsan verilerin de gelir. "veri" klasörünü silersen
+  her şey sıfırlanır.
+
+Notlar:
+  - 3000 ve 4000 portları boş olmalıdır.
+  - Klasörü yolunda Türkçe karakter ya da boşluk olmayan bir yere koymak en
+    sorunsuzudur (ör. C:\UniCoach).
+  - YouTube videoları, YÖK Atlas programları ve taranmış PDF'lerde OCR için
+    internet gerekir; diğer her şey internetsiz çalışır.
+  - Windows güvenlik duvarı izin isterse "İzin ver"e bas (telefonun aynı
+    ağdan bağlanabilmesi için).
+  - Sorun olursa ayrıntılar "veri" klasöründeki .log dosyalarındadır.

@@ -7,5 +7,6 @@ import { SourcesService } from "./sources.service";
   imports: [AuthModule],
   controllers: [SourcesController],
   providers: [SourcesService],
+  exports: [SourcesService],
 })
 export class SourcesModule {}

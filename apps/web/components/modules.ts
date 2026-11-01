@@ -38,7 +38,7 @@ export const modules: ModuleInfo[] = [
   },
   {
     href: "/sinavlar",
-    title: "Geçmiş Sınavlar",
+    title: "Sınavlar",
     description: "Soru Bankası'ndan çıkardığın testlerle süreli deneme. Netini gör, yanlışlarını gözden geçir.",
     icon: ClipboardList,
     phase: 4,

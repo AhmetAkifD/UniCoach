@@ -235,7 +235,7 @@ export function ExamRunner({ exam }: { exam: ExamDetail }) {
     [exam.questions.length, indexKey],
   );
 
-  // Kısayollar: A–E cevap (aynı harf tekrar basılınca boşaltır), ← → soru değiştir.
+  // Kısayollar: A–E cevap (aynı harf tekrar basılınca boşaltır), Boşluk boş bırakır, ← → soru değiştir.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (isTyping(e.target) || e.ctrlKey || e.metaKey || e.altKey || finishing || paused || document.querySelector("dialog[open]")) return;
@@ -243,7 +243,7 @@ export function ExamRunner({ exam }: { exam: ExamDetail }) {
       if (letterIndex >= 0 && letterIndex < q.choiceCount) {
         const letter = CHOICE_LETTERS[letterIndex]!;
         choose(answers[q.id] === letter ? null : letter);
-      } else if (e.key === "Backspace" || e.key === "Delete") {
+      } else if (e.key === " ") {
         if (answers[q.id]) choose(null);
       } else if (e.key === "ArrowRight") go(index + 1);
       else if (e.key === "ArrowLeft") go(index - 1);
@@ -419,7 +419,7 @@ export function ExamRunner({ exam }: { exam: ExamDetail }) {
               role="radio"
               aria-checked={!answers[q.id]}
               onClick={() => answers[q.id] && choose(null)}
-              title="Boş bırak (Backspace)"
+              title="Boş bırak (Boşluk)"
               className={cn(
                 "inline-flex h-12 items-center justify-center rounded-full border px-5 text-base font-semibold transition-colors duration-fast",
                 !answers[q.id]
@@ -435,7 +435,7 @@ export function ExamRunner({ exam }: { exam: ExamDetail }) {
             <Button variant="ghost" onClick={() => go(index - 1)} disabled={index === 0}>
               <ChevronLeft className="size-5" aria-hidden /> Önceki
             </Button>
-            <span className="hidden text-xs text-text-subtle sm:block">A–E ile işaretle, Backspace boş bırakır, ← → ile geç</span>
+            <span className="hidden text-xs text-text-subtle sm:block">A–E ile işaretle, Boşluk boş bırakır, ← → ile geç</span>
             <Button variant="ghost" onClick={() => go(index + 1)} disabled={index === exam.questions.length - 1}>
               Sonraki <ChevronRight className="size-5" aria-hidden />
             </Button>

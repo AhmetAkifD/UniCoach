@@ -69,6 +69,7 @@ export default async function ProfilePage() {
         </Card>
       </Section>
 
+
       <Section title="Hesabı sil">
         {/* Card'ın kenar rengi sınıfla ezilemediği için (cn birleştirmez) kırmızı kenarlı kutu ayrı yazıldı. */}
         <div className="rounded-lg border border-danger/40 bg-surface p-5 shadow-card">

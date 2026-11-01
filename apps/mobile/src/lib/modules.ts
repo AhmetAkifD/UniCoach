@@ -35,7 +35,7 @@ export const modules: ModuleInfo[] = [
   },
   {
     route: "sinavlar",
-    title: "Geçmiş Sınavlar",
+    title: "Sınavlar",
     description: "Soru Bankası'ndan çıkardığın testlerle süreli deneme. Netini gör, yanlışlarını gözden geçir.",
     icon: ClipboardList,
     ready: true,

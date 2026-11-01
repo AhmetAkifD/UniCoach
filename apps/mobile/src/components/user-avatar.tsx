@@ -1,7 +1,7 @@
 import { View } from "react-native";
 import { Image } from "expo-image";
 import type { AuthUser } from "@unicoach/shared";
-import { API_BASE_URL, getApiToken } from "@/lib/api";
+import { apiBaseUrl, getApiToken } from "@/lib/api";
 import { useTheme } from "@/lib/theme";
 import { Text } from "./ui/text";
 
@@ -16,7 +16,7 @@ export function UserAvatar({ user, size = 36 }: { user: Pick<AuthUser, "firstNam
     const token = getApiToken();
     return (
       <Image
-        source={{ uri: `${API_BASE_URL}${user.avatarUrl}`, headers: token ? { Authorization: `Bearer ${token}` } : undefined }}
+        source={{ uri: `${apiBaseUrl()}${user.avatarUrl}`, headers: token ? { Authorization: `Bearer ${token}` } : undefined }}
         style={{ width: size, height: size, borderRadius: size / 2 }}
         contentFit="cover"
         accessibilityIgnoresInvertColors

@@ -90,8 +90,7 @@ export default function AddSourceScreen() {
   return (
     <Screen edges={["bottom"]}>
       <Text tone="textMuted">
-        Bir YouTube videosu ya da oynatma listesi ekle. Liste, YouTube'daki sırasıyla bir grup olarak durur. Bağlantıyı YouTube
-        uygulamasındaki "Paylaş → Bağlantıyı kopyala" ile alabilirsin.
+        Bir YouTube videosu ya da oynatma listesi ekle. Bağlantıyı YouTube uygulamasındaki "Paylaş → Bağlantıyı kopyala" ile alabilirsin.
       </Text>
 
       {errors.form && (

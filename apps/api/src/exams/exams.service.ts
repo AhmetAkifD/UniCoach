@@ -3,6 +3,7 @@ import type { Exam, ExamQuestion as ExamQuestionRow, QuestionBook } from "@prism
 import {
   EXAM_MAX_QUESTIONS,
   examNet,
+  solvedToday,
   findSubject,
   type ChoiceLetter,
   type CreateExamInput,
@@ -10,6 +11,7 @@ import {
   type ExamDetail,
   type ExamQuestion,
   type ExamSummary,
+  type ExamTodayStats,
   type ExamTrack,
   type ExtendExamInput,
 } from "@unicoach/shared";
@@ -32,6 +34,17 @@ export class ExamsService {
     });
     const settled = await Promise.all(exams.map((e) => this.finishIfExpired(e)));
     return settled.map(toSummary);
+  }
+
+  /** Bugün cevaplanan sorular (sunucu öğrencinin bilgisayarında çalıştığı için yerel gün onunkidir). */
+  async today(userId: string): Promise<ExamTodayStats> {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const questions = await this.prisma.examQuestion.findMany({
+      where: { exam: { userId }, answer: { not: null }, answeredAt: { gte: start } },
+      select: { answer: true, answeredAt: true },
+    });
+    return { solved: solvedToday(questions, now) };
   }
 
   async get(userId: string, id: string): Promise<ExamDetail> {

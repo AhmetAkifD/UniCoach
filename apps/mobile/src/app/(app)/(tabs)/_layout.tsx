@@ -1,6 +1,7 @@
-import { Pressable, type ColorValue } from "react-native";
+import { Pressable, View, type ColorValue } from "react-native";
 import { Tabs, router } from "expo-router";
 import { BookOpenText, ClipboardList, GraduationCap, House, PlaySquare, type LucideIcon } from "lucide-react-native";
+import { OfflineIndicator } from "@/components/sync-status";
 import { UserAvatar } from "@/components/user-avatar";
 import { useSession } from "@/lib/session";
 import { fonts, useTheme } from "@/lib/theme";
@@ -22,15 +23,18 @@ export default function AppLayout() {
         headerTintColor: colors.text,
         headerRight: () =>
           user ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Profil"
-              onPress={() => router.push("/profil")}
-              style={{ marginRight: 16 }}
-              hitSlop={8}
-            >
-              <UserAvatar user={user} size={34} />
-            </Pressable>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <OfflineIndicator />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Profil"
+                onPress={() => router.push("/profil")}
+                style={{ marginRight: 16 }}
+                hitSlop={8}
+              >
+                <UserAvatar user={user} size={34} />
+              </Pressable>
+            </View>
           ) : null,
         tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border },
         tabBarActiveTintColor: colors.primary,
@@ -42,7 +46,7 @@ export default function AppLayout() {
       <Tabs.Screen name="index" options={{ title: "Ana Sayfa", headerTitle: "UniCoach", tabBarIcon: icon(House) }} />
       <Tabs.Screen name="konular" options={{ title: "Konular", headerTitle: "Konu Anlatımı", tabBarIcon: icon(PlaySquare) }} />
       <Tabs.Screen name="soru-bankasi" options={{ title: "Soru Bankası", tabBarIcon: icon(BookOpenText) }} />
-      <Tabs.Screen name="sinavlar" options={{ title: "Sınavlar", headerTitle: "Geçmiş Sınavlar", tabBarIcon: icon(ClipboardList) }} />
+      <Tabs.Screen name="sinavlar" options={{ title: "Sınavlar", tabBarIcon: icon(ClipboardList) }} />
       <Tabs.Screen name="tercih" options={{ title: "Tercih", headerTitle: "YKS Tercih", tabBarIcon: icon(GraduationCap) }} />
     </Tabs>
   );

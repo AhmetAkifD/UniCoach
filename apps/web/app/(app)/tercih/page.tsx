@@ -17,7 +17,7 @@ export default async function TercihPage() {
         <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">YKS Tercih</h1>
           <p className="text-text-muted">
-            Önce sınav sonucunu ekle. Tercih yaparken puanların ve başarı sıraların buradan kullanılacak.
+            Sınav sonucunu sisteme yükle. Ardından bölümleri keşfet ve tercih listeni oluştur.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">

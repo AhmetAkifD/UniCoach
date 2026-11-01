@@ -1,8 +1,8 @@
 import { useCallback, useState } from "react";
 import { RefreshControl, ScrollView, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
-import { TrendingUp } from "lucide-react-native";
-import { formatNet, type ExamSummary, type SourceSummary } from "@unicoach/shared";
+import { Target, TrendingUp } from "lucide-react-native";
+import { formatNet, type ExamSummary, type ExamTodayStats, type SourceSummary } from "@unicoach/shared";
 import { layout, radius, spacing } from "@unicoach/design";
 import { TopicProgressCard } from "@/components/library/topic-progress-card";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ import { api } from "@/lib/api";
 import { modules } from "@/lib/modules";
 import { useSession } from "@/lib/session";
 import { useTheme } from "@/lib/theme";
+import { useSyncRefresh } from "@/lib/sync";
 
 /** Ana sayfa: selam, son deneme, konu ilerlemesi ve modüller — web ana sayfasının mobil karşılığı. */
 export default function Home() {
@@ -19,14 +20,22 @@ export default function Home() {
   const { colors } = useTheme();
   const [lastExam, setLastExam] = useState<ExamSummary | null>(null);
   const [sources, setSources] = useState<SourceSummary[] | null>(null);
+  const [today, setToday] = useState<ExamTodayStats | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
-    const [exams, list] = await Promise.all([api.exams.list().catch(() => null), api.sources.list().catch(() => null)]);
+    const [exams, list, solved] = await Promise.all([
+      api.exams.list().catch(() => null),
+      api.sources.list().catch(() => null),
+      api.exams.today().catch(() => null),
+    ]);
     setLastExam(exams?.find((e) => e.finishedAt) ?? null);
     setSources(list);
+    setToday(solved);
   }, []);
 
+  // Arka planda eşitleme veriyi değiştirince (ör. web'de yapılan değişiklik) yeniden okunur.
+  useSyncRefresh(() => void load());
   // Sekmeye her dönüşte (ör. deneme çözülüp video izlendikten sonra) yenilenir.
   useFocusEffect(
     useCallback(() => {
@@ -55,7 +64,7 @@ export default function Home() {
         <Text size="2xl" weight="semibold">
           Merhaba {user?.firstName} 👋
         </Text>
-        <Text tone="textMuted">Bugün hangi konuya çalışmak istersin? Küçük adımlar, büyük netler.</Text>
+        <Text tone="textMuted">Bugün hangi konuya çalışmak istersin?</Text>
       </View>
 
       {/* Son biten sınav varsa kart sonucunu açar. */}
@@ -79,6 +88,25 @@ export default function Home() {
         </Text>
       </PressableCard>
 
+      <PressableCard
+        accessibilityLabel={`Bugün çözülen soru sayısı: ${today?.solved ?? 0}`}
+        onPress={() => router.navigate("/sinavlar")}
+        style={{ gap: spacing[2] }}
+      >
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          <Text size="sm" weight="medium" tone="textMuted">
+            Bugün çözülen soru sayısı
+          </Text>
+          <Target size={20} color={colors.primary} />
+        </View>
+        <Text size="4xl" weight="bold">
+          {today ? today.solved : "—"}
+        </Text>
+        <Text size="sm" tone="textMuted">
+          {today?.solved ? "Sınavlarda cevapladığın sorular." : "Bugün henüz soru çözmedin."}
+        </Text>
+      </PressableCard>
+
       <TopicProgressCard sources={sources} />
 
       <View style={{ gap: spacing[4] }}>
@@ -94,7 +122,7 @@ export default function Home() {
             <Container
               key={m.title}
               onPress={m.ready && route ? () => router.navigate(`/${route}`) : undefined}
-              style={{ flexDirection: "row", gap: spacing[4], alignItems: "flex-start" }}
+              style={{ flexDirection: "row", gap: spacing[4], alignItems: "center" }}
             >
               <View style={{ width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.primarySoft, alignItems: "center", justifyContent: "center" }}>
                 <Icon size={20} color={colors.primarySoftText} strokeWidth={1.75} />
@@ -102,9 +130,6 @@ export default function Home() {
               <View style={{ flex: 1, gap: 4 }}>
                 <Text size="lg" weight="semibold">
                   {m.title}
-                </Text>
-                <Text size="sm" tone="textMuted">
-                  {m.description}
                 </Text>
                 {!m.ready && <Badge tone="primary">Mobilde yakında</Badge>}
               </View>

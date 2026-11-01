@@ -81,7 +81,7 @@ export function ExamResult({ exam }: { exam: ExamDetail }) {
     <div className="flex flex-col gap-8">
       {dialog}
       <Link href="/sinavlar" className="inline-flex items-center gap-1.5 self-start text-sm font-medium text-text-muted hover:text-text">
-        <ArrowLeft className="size-4" aria-hidden /> Geçmiş Sınavlar
+        <ArrowLeft className="size-4" aria-hidden /> Sınavlar
       </Link>
 
       <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">

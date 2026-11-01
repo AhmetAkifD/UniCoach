@@ -16,6 +16,7 @@ import {
 } from "@unicoach/shared";
 import { spacing } from "@unicoach/design";
 import { PasswordChecklist } from "@/components/password-checklist";
+import { SyncStatusCard } from "@/components/sync-status";
 import { UserAvatar } from "@/components/user-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,7 @@ import { Screen } from "@/components/ui/screen";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Text } from "@/components/ui/text";
 import { useDialog } from "@/components/ui/use-dialog";
-import { api, getApiToken } from "@/lib/api";
+import { api, getApiToken, syncEngine } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { useTheme } from "@/lib/theme";
 
@@ -35,9 +36,28 @@ const errorText = (err: unknown, fallback: string) => (err instanceof ApiError ?
 export default function Profile() {
   const { user, refresh, signOut } = useSession();
   const { colors } = useTheme();
+  const { confirm, dialog } = useDialog();
   if (!user) return null;
+
+  // Çıkışta bu cihazdaki kopya silinir; henüz gönderilmemiş değişiklik varsa önce sorulur.
+  async function leave() {
+    if (syncEngine.getState().pending) await syncEngine.sync();
+    const pending = syncEngine.getState().pending;
+    if (pending) {
+      const ok = await confirm({
+        title: "Gönderilmemiş değişiklikler var",
+        message: `Bu cihazda sunucuya henüz gönderilmemiş ${pending} değişiklik var. Çıkış yaparsan kaybolur. Önce evdeki sunucuyla aynı ağa bağlanıp eşitlemeni öneririz.`,
+        confirmLabel: "Yine de çıkış yap",
+        danger: true,
+      });
+      if (!ok) return;
+    }
+    await signOut();
+  }
+
   return (
     <Screen edges={[]}>
+      {dialog}
       <Header user={user} onChange={refresh} />
       <Section title="Hesap">
         <Card style={{ gap: spacing[4] }}>
@@ -59,7 +79,10 @@ export default function Profile() {
           <PreferenceForm user={user} onSaved={refresh} />
         </Card>
       </Section>
-      <Button variant="secondary" icon={<LogOut size={18} color={colors.primarySoftText} />} onPress={() => void signOut()}>
+      <Section title="Bu cihazdaki veriler">
+        <SyncStatusCard />
+      </Section>
+      <Button variant="secondary" icon={<LogOut size={18} color={colors.primarySoftText} />} onPress={() => void leave()}>
         Çıkış yap
       </Button>
       <Section title="Hesabı sil">

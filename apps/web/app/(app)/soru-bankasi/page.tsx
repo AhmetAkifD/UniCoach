@@ -30,7 +30,7 @@ export default async function QuestionBankPage({
       <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Soru Bankası</h1>
-          <p className="text-text-muted">Soru kitaplarının PDF'leri, derslerine ve konularına göre.</p>
+          <p className="text-text-muted">Kaynaklarını derslere ayrılmış şekilde görüntüle.</p>
         </div>
         {books.length > 0 && <UploadBookButton examTrack={user.examTrack} topics={topics} />}
       </section>

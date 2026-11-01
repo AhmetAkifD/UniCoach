@@ -5,11 +5,13 @@
  * çizim pdf.js ile yapılır (web'deki görüntüleyiciyle aynı kütüphane).
  *
  * Sayfalar alt alta dizilir, yalnızca görünenler (ve yakınındakiler) çizilir; uzaklaşan sayfanın tuvali
- * bırakılır ki büyük PDF'lerde bellek dolmasın. Dosya Range istekleriyle parça parça okunur (API destekler).
+ * bırakılır ki büyük PDF'lerde bellek dolmasın. Dosya parça parça okunur: sunucudan Range istekleriyle ya da cihazdaki
+ * kopyadan (lib/pdfjs-page.ts).
  */
 
-/** cdnjs'teki pdf.js sürümü (klasik betik; eski WebView'lerde de çalışır). */
-export const PDFJS_CDN = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174";
+import { PDFJS_OPEN, pdfjsHead, type PdfSource } from "./pdfjs-page";
+
+export { PDFJS_CDN } from "./pdfjs-page";
 
 /** Sayfadan uygulamaya gelen mesajlar */
 export type PdfEvent =
@@ -24,17 +26,15 @@ export interface PdfFrameHandle {
 }
 
 export interface PdfViewerConfig {
-  /** PDF'in adresi (GET /api/books/:id/file) */
-  url: string;
-  /** Oturum belirteci: istekler `Authorization: Bearer` ile gider. */
-  token: string | null;
+  /** PDF'in kaynağı: sunucu (GET /api/books/:id/file, `Authorization: Bearer`) ya da cihazdaki kopya */
+  source: PdfSource;
   /** Açılışta gösterilecek sayfa (kalınan sayfa) */
   page: number;
   /** Sayfaların arkasındaki zemin (temaya göre) */
   background: string;
 }
 
-export function pdfViewerHtml(config: PdfViewerConfig): string {
+export function pdfViewerHtml(config: PdfViewerConfig, pdfjs: { lib: string; worker: string } | null = null): string {
   return `<!doctype html>
 <html><head>
 <meta charset="utf-8">
@@ -45,10 +45,11 @@ html,body{margin:0;background:${config.background};-webkit-tap-highlight-color:t
 .page{position:relative;width:calc(100vw - 16px);background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);aspect-ratio:1/1.414}
 .page canvas{position:absolute;inset:0;width:100%;height:100%}
 </style>
-<script src="${PDFJS_CDN}/pdf.min.js"></script>
+${pdfjsHead(pdfjs)}
 </head><body><div id="pages"></div>
 <script>
 var cfg = ${JSON.stringify(config)};
+${PDFJS_OPEN}
 var doc = null, pages = [], rendered = {}, tasks = {}, current = 0;
 function post(m) {
   var s = JSON.stringify(m);
@@ -56,19 +57,12 @@ function post(m) {
   else window.parent.postMessage({ uc: s }, "*");
 }
 window.uc = {
+  pdfData: pdfData,
   goTo: function (n) {
     var el = pages[n - 1];
     if (el) el.scrollIntoView({ block: "start" });
   }
 };
-// Worker başka kökenden doğrudan açılamaz; betik indirilip bu sayfanın kökeninde çalıştırılır.
-function setupWorker() {
-  return fetch("${PDFJS_CDN}/pdf.worker.min.js").then(function (r) { return r.text(); }).then(function (code) {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(new Blob([code], { type: "text/javascript" }));
-  }).catch(function () {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = "${PDFJS_CDN}/pdf.worker.min.js";
-  });
-}
 function render(n) {
   if (rendered[n]) return;
   rendered[n] = true;
@@ -113,15 +107,7 @@ function onScroll() {
   scheduled = true;
   requestAnimationFrame(function () { scheduled = false; updateCurrent(); });
 }
-setupWorker().then(function () {
-  return pdfjsLib.getDocument({
-    url: cfg.url,
-    httpHeaders: cfg.token ? { Authorization: "Bearer " + cfg.token } : {},
-    disableAutoFetch: true,
-    disableStream: true,
-    rangeChunkSize: 1024 * 1024
-  }).promise;
-}).then(function (d) {
+openPdf(cfg.source).then(function (d) {
   doc = d;
   return d.getPage(1);
 }).then(function (first) {

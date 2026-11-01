@@ -1,8 +1,11 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import type { Notebook, NotebookPage, Prisma } from "@prisma/client";
 import {
+  applyNotePageDiff,
   EMPTY_NOTE_PAGE,
   NOTEBOOK_MAX_PAGES,
+  notePageContentSchema,
+  type NotePageDiff,
   type NotebookDetail,
   type NotebookSummary,
   type NotePage,
@@ -33,9 +36,15 @@ export class NotebooksService {
   }
 
   /** Yeni defter boş bir sayfayla açılır. */
-  async create(userId: string, title: string): Promise<NotebookDetail> {
+  /** `ids` telefonda çevrimdışı açılan defterde verilir (kimlikleri telefon üretir). */
+  async create(userId: string, title: string, ids?: { id: string; pageId: string }): Promise<NotebookDetail> {
     const row = await this.prisma.notebook.create({
-      data: { userId, title, pages: { create: { position: 1, content: EMPTY_NOTE_PAGE as Prisma.InputJsonValue } } },
+      data: {
+        ...(ids && { id: ids.id }),
+        userId,
+        title,
+        pages: { create: { ...(ids && { id: ids.pageId }), position: 1, content: EMPTY_NOTE_PAGE as Prisma.InputJsonValue } },
+      },
       include: { pages: pageRefs },
     });
     return toDetail(row);
@@ -64,33 +73,54 @@ export class NotebooksService {
     };
   }
 
-  /** Verilen sayfanın arkasına (yoksa en sona) boş sayfa ekler. */
-  async addPage(userId: string, id: string, afterPageId: string | null): Promise<NotebookDetail> {
+  /**
+   * Verilen sayfanın arkasına (yoksa en sona) boş sayfa ekler. Telefondan gelen eşitlemede (`pageId` verilir) arkasına
+   * eklenecek sayfa bu arada başka cihazda silinmişse sayfa en sona eklenir.
+   */
+  async addPage(userId: string, id: string, afterPageId: string | null, pageId?: string): Promise<NotebookDetail> {
     const notebook = await this.find(userId, id);
     if (notebook.pages.length >= NOTEBOOK_MAX_PAGES) {
       throw new BadRequestException(`Bir defterde en fazla ${NOTEBOOK_MAX_PAGES} sayfa olabilir.`);
     }
     const after = afterPageId ? notebook.pages.find((p) => p.id === afterPageId) : null;
-    if (afterPageId && !after) throw new NotFoundException("Sayfa bulunamadı.");
+    if (afterPageId && !after && !pageId) throw new NotFoundException("Sayfa bulunamadı.");
     const position = after ? after.position + 1 : notebook.pages.length + 1;
     await this.prisma.$transaction([
       this.prisma.notebookPage.updateMany({
         where: { notebookId: id, position: { gte: position } },
         data: { position: { increment: 1 } },
       }),
-      this.prisma.notebookPage.create({ data: { notebookId: id, position, content: EMPTY_NOTE_PAGE as Prisma.InputJsonValue } }),
+      this.prisma.notebookPage.create({
+        data: { ...(pageId && { id: pageId }), notebookId: id, position, content: EMPTY_NOTE_PAGE as Prisma.InputJsonValue },
+      }),
       this.prisma.notebook.update({ where: { id }, data: { updatedAt: new Date() } }),
     ]);
     return this.get(userId, id);
   }
 
-  async savePage(userId: string, id: string, pageId: string, content: NotePageContent): Promise<NotePageRef> {
+  /**
+   * Sayfayı kaydeder: `content` bütün sayfayı yazar, `diff` sunucudaki sayfayla birleştirilir (başka cihazda bu arada
+   * eklenenler korunur). Birleştirme satır kilidiyle yapılır; aynı anda gelen iki fark birbirini ezmez.
+   */
+  async savePage(
+    userId: string,
+    id: string,
+    pageId: string,
+    input: { content?: NotePageContent; diff?: NotePageDiff },
+  ): Promise<NotePageRef> {
     await this.find(userId, id);
-    const { count } = await this.prisma.notebookPage.updateMany({
-      where: { id: pageId, notebookId: id },
-      data: { content: content as unknown as Prisma.InputJsonValue },
+    await this.prisma.$transaction(async (tx) => {
+      const locked = await tx.$queryRaw<{ content: unknown }[]>`
+        SELECT content FROM "NotebookPage" WHERE id = ${pageId} AND "notebookId" = ${id} FOR UPDATE`;
+      if (!locked.length) throw new NotFoundException("Sayfa bulunamadı.");
+      let content = input.content;
+      if (input.diff) {
+        const merged = notePageContentSchema.safeParse(applyNotePageDiff(locked[0]!.content as NotePageContent, input.diff));
+        if (!merged.success) throw new BadRequestException("Sayfa çok doldu; yeni bir sayfaya devam et.");
+        content = merged.data;
+      }
+      await tx.notebookPage.update({ where: { id: pageId }, data: { content: content as unknown as Prisma.InputJsonValue } });
     });
-    if (!count) throw new NotFoundException("Sayfa bulunamadı.");
     const [page] = await this.prisma.$transaction([
       this.prisma.notebookPage.findUniqueOrThrow({ where: { id: pageId } }),
       this.prisma.notebook.update({ where: { id }, data: { updatedAt: new Date() } }),
