@@ -2,7 +2,7 @@ import Link from "next/link";
 import { GraduationCap } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
-/** Giriş akışı: logo ekranın sol üstünde; form ekranın sağına yapışık, tam yükseklikte panelde. */
+/** Giriş akışı: logo ekranın sol üstünde; form ekranın sağına yapışık, tam yükseklikte panelde (geniş ekranda genişliğin üçte biri). */
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative flex min-h-dvh justify-end">
@@ -15,7 +15,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </span>
         <span className="text-lg">UniCoach</span>
       </Link>
-      <aside className="flex min-h-dvh w-full flex-col border-border bg-surface sm:max-w-md sm:border-l sm:shadow-raised">
+      <aside className="flex min-h-dvh w-full flex-col border-border bg-surface sm:max-w-md sm:border-l sm:shadow-raised lg:w-1/3 lg:max-w-none">
         <div className="flex justify-end px-6 pt-5 sm:px-10">
           <ThemeToggle />
         </div>
