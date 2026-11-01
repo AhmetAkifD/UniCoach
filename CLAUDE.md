@@ -48,8 +48,7 @@ Paketler `dist/` dizinine derlenir (CommonJS). Uygulamalardan önce `npm run bui
 
 ## Komutlar
 
-**Docker Desktop 2026-11-01'de yeniden kuruldu** (kullanıcı başına kurulum: `%LOCALAPPDATA%\Programs\DockerDesktop
-esourcesin`; uygulama yeni açılmış bir kabukta değilse PATH'te olmayabilir). `docker compose up --build` v1.0 öncesi doğrulandı. Günlük geliştirme yine doğrudan Windows'a kurulu PostgreSQL 18 ile yapılır (`localhost:5432`, kullanıcı/şifre/veritabanı `unicoach`, kurulum: `scripts/setup-local-db.sql`); Docker'daki veritabanı ayrı bir volume'dadır. Compose 3000 ve 4000 portlarını kullanır: geliştirme sunucuları açıkken başlatılamaz. Next.js'te API'ye bağlı sunucu sayfaları `force-dynamic` olmalı, yoksa Docker derlemesinde (API kapalıyken) statik üretilip o hâlde kalır.
+**Docker Desktop 2026-11-01'de yeniden kuruldu** (kullanıcı başına kurulum: `%LOCALAPPDATA%\Programs\DockerDesktop\resources\bin`; uygulama yeni açılmış bir kabukta değilse PATH'te olmayabilir). `docker compose up --build` v1.0 öncesi doğrulandı. Günlük geliştirme yine doğrudan Windows'a kurulu PostgreSQL 18 ile yapılır (`localhost:5432`, kullanıcı/şifre/veritabanı `unicoach`, kurulum: `scripts/setup-local-db.sql`); Docker'daki veritabanı ayrı bir volume'dadır. Compose 3000 ve 4000 portlarını kullanır: geliştirme sunucuları açıkken başlatılamaz. Next.js'te API'ye bağlı sunucu sayfaları `force-dynamic` olmalı, yoksa Docker derlemesinde (API kapalıyken) statik üretilip o hâlde kalır.
 
 ```bash
 npm install                                   # bağımlılıklar
@@ -74,3 +73,4 @@ npm run web -w @unicoach/mobile               # mobil uygulamanın tarayıcı ö
 5. YKS tercih — ✅ sonuç belgesinden okuma, elle giriş ve düzenleme; ✅ YÖK Atlas programları (indirilmiş + canlı); ✅ tercih listesi (uyarılarla, en fazla 24)
 6. ✅ Mobil uygulama — iskelet, giriş, ana sayfa, profil, Konu Anlatımı, Soru Bankası (soru çıkarma dahil), Çalışma Alanı, Sınavlar, YKS Tercih
 7. Çevrimdışı çalışma ve cihazlar arası eşitleme (v1.0 öncesi) — ✅ 1. aşama: altyapı, verinin telefonda okunması; ✅ 2. aşama: çevrimdışı yazma (not defteri birleştirmesi, ilerleme, kalınan sayfa); ✅ 3. aşama: PDF'ler cihazda, soru çıkarma ve sınavlar çevrimdışı; ✅ 4. aşama: durum ekranı, süresi dolan oturumda verinin korunması (QR eşleme kaldırıldı); ⏳ APK
+8. ✅ **v1.0.0** (2026-11-01): `docker compose up --build`, kurulumsuz taşınabilir paket ve "Kur ve başlat" klasörü (sürüme eklenen)

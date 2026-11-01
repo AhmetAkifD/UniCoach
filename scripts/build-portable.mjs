@@ -53,7 +53,7 @@ const pinned = Object.fromEntries(
 );
 fs.writeFileSync(
   path.join(apiOut, "package.json"),
-  JSON.stringify({ name: "unicoach-api", private: true, dependencies: pinned }, null, 2),
+  JSON.stringify({ name: "unicoach-api", version: apiPkg.version, private: true, dependencies: pinned }, null, 2),
 );
 sh("npm install --omit=dev --no-audit --no-fund --prefer-offline --no-package-lock", { cwd: apiOut });
 // Ortak paket bağlantı (junction) yerine gerçek kopya olarak: klasör taşınınca kırılmasın.

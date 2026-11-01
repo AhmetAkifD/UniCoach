@@ -1,6 +1,6 @@
 {
   "name": "unicoach",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "UniCoach — YKS/LGS öğrenci yardım sistemi (web + mobil, ortak API)",
   "workspaces": [

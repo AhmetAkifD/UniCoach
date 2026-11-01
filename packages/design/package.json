@@ -1,6 +1,6 @@
 {
   "name": "@unicoach/design",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "UniCoach tasarım token'ları — web ve mobil için tek kaynak",
   "main": "dist/index.js",
