@@ -43,9 +43,12 @@ Paketler `dist/` dizinine derlenir (CommonJS). Uygulamalardan önce `npm run bui
 - Arayüzde elle yazılmış örnek/sahte veri gösterilmez. Veri yoksa boş durum (empty state) gösterilir.
 - Bağımlılık sürümleri: NestJS 11 (12 yalnızca ESM), Prisma 6, TypeScript 5.9 bilinçli olarak seçildi. Yükseltme ayrı bir iş olarak ele alınır.
 
+- **Taşınabilir Windows paketi (kullanıcı isteği, 2026-11-01: "internetten indirilecek hiçbir programa bağımlı olmayan kapalı kutu"):** `scripts/build-portable.mjs` bu bilgisayardaki Node.js (`process.execPath`) ve PostgreSQL 18 kurulumundan (`PG_HOME`, varsayılan `C:\Program Files\PostgreSQL\18`; bin/lib/share) bir klasör kurar: `runtime/` (node.exe, pgsql, VC++ DLL'leri System32'den, `launcher.cjs`), `app/api` (dist + prisma + kilit dosyasındaki sürümlerle yalnızca üretim bağımlılıkları; `@unicoach/shared` bağlantı değil kopya), `app/web` (Next standalone; `API_INTERNAL_URL=http://127.0.0.1:4000` ile derlenir), `UniCoach.cmd`, `BENIOKU.txt`. Başlatıcı (`scripts/portable/launcher.cjs`, yalnızca Node'un kendi modülleri): ilk açılışta `veri/postgres`'e initdb (kullanıcı `unicoach`, trust, yalnızca 127.0.0.1:54329), `pg_ctl start` (stdio `ignore` — yoksa sunucu boruları açık tuttuğu için spawnSync dönmez), `prisma migrate deploy`, API :4000 ve web :3000 (loglar `veri/*.log`), JWT anahtarı `veri/jwt-secret`, tarayıcıyı açar; pencere kapanınca/Ctrl+C'de hepsini ve PostgreSQL'i kapatır. Veriler klasörle taşınır. Docker gerekmez; 3000/4000 boş olmalı.
+
 ## Komutlar
 
-**Docker Desktop 2026-11-01'de yeniden kuruldu** (kullanıcı başına kurulum: `%LOCALAPPDATA%\Programs\DockerDesktopesourcesin`; uygulama yeni açılmış bir kabukta değilse PATH'te olmayabilir). `docker compose up --build` v1.0 öncesi doğrulandı. Günlük geliştirme yine doğrudan Windows'a kurulu PostgreSQL 18 ile yapılır (`localhost:5432`, kullanıcı/şifre/veritabanı `unicoach`, kurulum: `scripts/setup-local-db.sql`); Docker'daki veritabanı ayrı bir volume'dadır. Compose 3000 ve 4000 portlarını kullanır: geliştirme sunucuları açıkken başlatılamaz. Next.js'te API'ye bağlı sunucu sayfaları `force-dynamic` olmalı, yoksa Docker derlemesinde (API kapalıyken) statik üretilip o hâlde kalır.
+**Docker Desktop 2026-11-01'de yeniden kuruldu** (kullanıcı başına kurulum: `%LOCALAPPDATA%\Programs\DockerDesktop
+esourcesin`; uygulama yeni açılmış bir kabukta değilse PATH'te olmayabilir). `docker compose up --build` v1.0 öncesi doğrulandı. Günlük geliştirme yine doğrudan Windows'a kurulu PostgreSQL 18 ile yapılır (`localhost:5432`, kullanıcı/şifre/veritabanı `unicoach`, kurulum: `scripts/setup-local-db.sql`); Docker'daki veritabanı ayrı bir volume'dadır. Compose 3000 ve 4000 portlarını kullanır: geliştirme sunucuları açıkken başlatılamaz. Next.js'te API'ye bağlı sunucu sayfaları `force-dynamic` olmalı, yoksa Docker derlemesinde (API kapalıyken) statik üretilip o hâlde kalır.
 
 ```bash
 npm install                                   # bağımlılıklar
@@ -54,6 +57,7 @@ npm run dev                                   # paketleri derler, API :4000 + we
 npm run build                                 # her şeyi derler
 npm run typecheck
 docker compose up --build                     # tam sistem (db + api + web)
+node scripts/build-portable.mjs               # kurulumsuz Windows paketi → masaüstünde UniCoach-tasinabilir.zip
 npm run mobile                                # Expo (telefonda Expo Go ile QR kodu okut; API ayrıca npm run dev ile açık olmalı)
 npm run web -w @unicoach/mobile               # mobil uygulamanın tarayıcı önizlemesi (:8081)
 ```

@@ -25,6 +25,16 @@ docker compose up --build
 
 Oturum belirteçleri `JWT_SECRET` ile imzalanır. Compose'ta yerel kullanım için bir varsayılan değer vardır; gerçek bir sunucuda `JWT_SECRET=... docker compose up` ile değiştirin.
 
+## Taşınabilir Windows paketi (kurulumsuz)
+
+Docker, Node.js ya da PostgreSQL kurulu olmayan bir Windows bilgisayarda çalışan tek klasör:
+
+```bash
+node scripts/build-portable.mjs
+```
+
+Masaüstünde `UniCoach-tasinabilir.zip` oluşur. Açılan klasördeki `UniCoach.cmd`'ye çift tıklamak veritabanını, API'yi ve web sitesini başlatır, tarayıcıda http://localhost:3000 açılır. Veriler klasörün içindeki `veri` dizinindedir. Paket, derlenen bilgisayardaki Node.js ve PostgreSQL 18 kurulumundan hazırlanır.
+
 ## Geliştirme
 
 Gereksinimler: Node.js 22+ ve PostgreSQL (doğrudan kurulu ya da Docker ile).

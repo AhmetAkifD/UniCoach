@@ -23,3 +23,6 @@ storage/
 
 # Deneme amaçlı örnek PDF'ler (telif hakkı sahiplerine ait)
 PDFs/
+
+# Taşınabilir paket çıktısı (scripts/build-portable.mjs)
+dist-portable/
