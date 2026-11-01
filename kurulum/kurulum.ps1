@@ -64,7 +64,9 @@ try {
     $VcGerekli = -not ((Test-Path "$env:SystemRoot\System32\vcruntime140_1.dll") -and (Test-Path "$env:SystemRoot\System32\msvcp140.dll"))
     $Liste = @($Paketler)
     if ($VcGerekli) { $Liste += $VcRedist }
-    $Toplam = ($Liste | Measure-Object -Property Boyut -Sum).Sum
+    # Measure-Object -Property, PowerShell 5.1'de hashtable anahtarlarını okumaz.
+    $Toplam = 0
+    foreach ($p in $Liste) { $Toplam += $p.Boyut }
 
     Yaz ""
     Yaz "İlk kurulum. Aşağıdakiler indirilecek:" "Yellow"
