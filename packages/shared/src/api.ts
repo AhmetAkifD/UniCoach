@@ -30,7 +30,7 @@ import type {
   SaveBookQuestionsInput,
   UpdateBookInput,
 } from "./question-bank";
-import type { CreateExamInput, ExamAnswerInput, ExamDetail, ExamQuestion, ExamSummary, ExtendExamInput } from "./exam-session";
+import type { CreateExamInput, ExamAnswerInput, ExamDetail, ExamQuestion, ExamSummary, ExamTodayStats, ExtendExamInput } from "./exam-session";
 import type { SaveYksResultInput, YksResult } from "./yks-result";
 import type { ProgramFilterOptions, ProgramPage, ProgramSearchInput } from "./programs";
 import type { PreferenceItem } from "./preferences";
@@ -165,6 +165,7 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
     /** Sınavlar: Soru Bankası'nda çıkarılan testlerden süreli deneme. */
     exams: {
       list: () => request<ExamSummary[]>("/exams", { cache: "no-store" }),
+      today: () => request<ExamTodayStats>("/exams/today", { cache: "no-store" }),
       get: (id: string) => request<ExamDetail>(`/exams/${encodeURIComponent(id)}`, { cache: "no-store" }),
       create: (input: CreateExamInput) => post<ExamDetail>("/exams", input),
       answer: (id: string, questionId: string, input: ExamAnswerInput) =>

@@ -1,8 +1,8 @@
 import { useCallback, useState } from "react";
 import { RefreshControl, ScrollView, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
-import { TrendingUp } from "lucide-react-native";
-import { formatNet, type ExamSummary, type SourceSummary } from "@unicoach/shared";
+import { Target, TrendingUp } from "lucide-react-native";
+import { formatNet, type ExamSummary, type ExamTodayStats, type SourceSummary } from "@unicoach/shared";
 import { layout, radius, spacing } from "@unicoach/design";
 import { TopicProgressCard } from "@/components/library/topic-progress-card";
 import { Badge } from "@/components/ui/badge";
@@ -20,12 +20,18 @@ export default function Home() {
   const { colors } = useTheme();
   const [lastExam, setLastExam] = useState<ExamSummary | null>(null);
   const [sources, setSources] = useState<SourceSummary[] | null>(null);
+  const [today, setToday] = useState<ExamTodayStats | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
-    const [exams, list] = await Promise.all([api.exams.list().catch(() => null), api.sources.list().catch(() => null)]);
+    const [exams, list, solved] = await Promise.all([
+      api.exams.list().catch(() => null),
+      api.sources.list().catch(() => null),
+      api.exams.today().catch(() => null),
+    ]);
     setLastExam(exams?.find((e) => e.finishedAt) ?? null);
     setSources(list);
+    setToday(solved);
   }, []);
 
   // Arka planda eşitleme veriyi değiştirince (ör. web'de yapılan değişiklik) yeniden okunur.
@@ -79,6 +85,25 @@ export default function Home() {
         </Text>
         <Text size="sm" tone="textMuted">
           {lastExam ? `${lastExam.title} · ${lastExam.correct} D, ${lastExam.wrong} Y` : "Henüz deneme çözmedin."}
+        </Text>
+      </PressableCard>
+
+      <PressableCard
+        accessibilityLabel={`Bugün çözülen soru sayısı: ${today?.solved ?? 0}`}
+        onPress={() => router.navigate("/sinavlar")}
+        style={{ gap: spacing[2] }}
+      >
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          <Text size="sm" weight="medium" tone="textMuted">
+            Bugün çözülen soru sayısı
+          </Text>
+          <Target size={20} color={colors.primary} />
+        </View>
+        <Text size="4xl" weight="bold">
+          {today ? today.solved : "—"}
+        </Text>
+        <Text size="sm" tone="textMuted">
+          {today?.solved ? "Sınavlarda cevapladığın sorular." : "Bugün henüz soru çözmedin."}
         </Text>
       </PressableCard>
 

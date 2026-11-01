@@ -7,6 +7,7 @@ import type {
   ExamDetail,
   ExamQuestion,
   ExamSummary,
+  ExamTodayStats,
   NotebookDetail,
   NotebookSummary,
   NotePage,
@@ -22,6 +23,7 @@ import type {
   SyncSourceItem,
   YksResult,
 } from "@unicoach/shared";
+import { solvedToday } from "@unicoach/shared";
 import { countByParent, fieldsByParent, readAll, readByParent, readOne } from "./db";
 
 /**
@@ -169,6 +171,10 @@ export async function listExams(): Promise<ExamSummary[]> {
   return exams
     .sort((a, b) => desc(a.startedAt, b.startedAt))
     .map((e) => examSummary(e, byExam.get(e.id) ?? [], titles.get(e.bookId) ?? ""));
+}
+
+export async function examToday(): Promise<ExamTodayStats> {
+  return { solved: solvedToday(await readAll("examQuestions")) };
 }
 
 export async function getExam(id: string): Promise<ExamDetail | null> {

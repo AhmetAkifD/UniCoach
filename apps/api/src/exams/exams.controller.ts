@@ -9,6 +9,7 @@ import {
   type ExamDetail,
   type ExamQuestion,
   type ExamSummary,
+  type ExamTodayStats,
   type ExtendExamInput,
 } from "@unicoach/shared";
 import { AuthGuard, CurrentUser } from "../auth/auth.guard";
@@ -24,6 +25,11 @@ export class ExamsController {
   @Get()
   list(@CurrentUser() user: AuthUser): Promise<ExamSummary[]> {
     return this.exams.list(user.id);
+  }
+
+  @Get("today")
+  today(@CurrentUser() user: AuthUser): Promise<ExamTodayStats> {
+    return this.exams.today(user.id);
   }
 
   @Post()

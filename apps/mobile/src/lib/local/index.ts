@@ -214,6 +214,10 @@ export function createLocalLayer(remote: ApiClient): { api: ApiClient; engine: S
         }
         return views.listExams();
       },
+      today: async () => {
+        await ready();
+        return views.examToday();
+      },
       get: async (id) => {
         await ready();
         return examAction(id, (s) => finishIfExpired(s, Date.now()));

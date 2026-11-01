@@ -79,6 +79,18 @@ export interface ExamSummary {
   net: number | null;
 }
 
+/** GET /api/exams/today — ana sayfadaki "Bugün çözülen soru sayısı" kartı. */
+export interface ExamTodayStats {
+  /** Bugün (cihazın/sunucunun yerel gününde) cevaplanan sınav soruları; boş bırakılanlar sayılmaz. */
+  solved: number;
+}
+
+/** Bugün cevaplanan soru sayısı; `answeredAt` yerel günün başından sonraysa sayılır. Sunucu ve telefon aynısını kullanır. */
+export function solvedToday(questions: { answer: string | null; answeredAt: string | Date | null }[], now = new Date()): number {
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  return questions.filter((q) => q.answer && q.answeredAt && new Date(q.answeredAt).getTime() >= start).length;
+}
+
 export interface ExamQuestion {
   id: string;
   position: number;

@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { ArrowRight, CircleCheck, CircleAlert, Flame, Target, TrendingUp } from "lucide-react";
-import { formatNet, type ExamSummary, type HealthResponse, type SourceSummary } from "@unicoach/shared";
+import { ArrowRight, CircleCheck, CircleAlert, Target, TrendingUp } from "lucide-react";
+import { formatNet, type ExamSummary, type ExamTodayStats, type HealthResponse, type SourceSummary } from "@unicoach/shared";
 import { TopicProgressCard } from "@/components/library/topic-progress-card";
 import { Badge } from "@/components/ui/badge";
 import { buttonClasses } from "@/components/ui/button";
@@ -27,6 +27,15 @@ async function getLastExam(): Promise<ExamSummary | null> {
   }
 }
 
+/** Bugün çözülen soru sayısı (ana sayfa kartı); API'ye ulaşılamazsa null. */
+async function getToday(): Promise<ExamTodayStats | null> {
+  try {
+    return await (await authedApi()).exams.today();
+  } catch {
+    return null;
+  }
+}
+
 /** Konu Anlatımı kaynakları ("Konu ilerlemen" kartı); API'ye ulaşılamazsa null. */
 async function getSources(): Promise<SourceSummary[] | null> {
   try {
@@ -38,7 +47,13 @@ async function getSources(): Promise<SourceSummary[] | null> {
 
 export default async function HomePage() {
   // Layout oturumu zaten doğruladı; getSession istek başına önbelleklenir.
-  const [user, health, lastExam, sources] = await Promise.all([getSession(), getHealth(), getLastExam(), getSources()]);
+  const [user, health, lastExam, sources, today] = await Promise.all([
+    getSession(),
+    getHealth(),
+    getLastExam(),
+    getSources(),
+    getToday(),
+  ]);
   const firstName = user?.firstName ?? "";
 
   return (
@@ -53,7 +68,7 @@ export default async function HomePage() {
         </Link>
       </section>
 
-      <section aria-label="Özet" className="grid gap-4 sm:grid-cols-3">
+      <section aria-label="Özet" className="grid gap-4 sm:grid-cols-2">
         <Link href={lastExam ? `/sinavlar/${lastExam.id}` : "/sinavlar"} className="rounded-lg">
           <StatCard
             label="Son deneme"
@@ -66,8 +81,14 @@ export default async function HomePage() {
             icon={<TrendingUp className="size-5" />}
           />
         </Link>
-        <StatCard label="Çalışma serisi" value="—" hint="İlk çalışmanla seri başlar." icon={<Flame className="size-5" />} />
-        <StatCard label="Bugünkü hedef" value="—" hint="Henüz soru çözmedin." icon={<Target className="size-5" />} />
+        <Link href="/sinavlar" className="rounded-lg">
+          <StatCard
+            label="Bugün çözülen soru sayısı"
+            value={today ? String(today.solved) : "—"}
+            hint={!today ? "Sunucuya ulaşılamadı." : today.solved ? "Sınavlarda cevapladığın sorular." : "Bugün henüz soru çözmedin."}
+            icon={<Target className="size-5" />}
+          />
+        </Link>
       </section>
 
       <section className="grid gap-4 lg:grid-cols-3">
