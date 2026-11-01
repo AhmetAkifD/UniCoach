@@ -4,6 +4,8 @@ import { serverApi } from "@/lib/api";
 import { getSession } from "@/lib/session";
 
 export const metadata = { title: "Giriş yap" };
+// API durumu her istekte sorulur; yoksa derlemede (API kapalıyken) "ulaşılamadı" hâli sabitlenir.
+export const dynamic = "force-dynamic";
 
 /** Sayfa açılırken API'ye ulaşılabiliyor mu? Ulaşılamıyorsa kullanıcı e-postasını yazmadan önce uyarılır. */
 async function isApiReachable(): Promise<boolean> {
