@@ -25,6 +25,10 @@ docker compose up --build
 
 Oturum belirteçleri `JWT_SECRET` ile imzalanır. Compose'ta yerel kullanım için bir varsayılan değer vardır; gerçek bir sunucuda `JWT_SECRET=... docker compose up` ile değiştirin.
 
+## Kur ve başlat (Windows, Docker'sız)
+
+Klasördeki `UniCoach-Kur-ve-Baslat.cmd`'ye çift tıkla. İlk çalıştırmada indirilecekleri (Node.js, PostgreSQL, npm kütüphaneleri, Prisma motoru, yazı tipi; gerekirse Visual C++ çalışma zamanı) kaynakları, boyutları ve kayıt yerleriyle listeler ve onay ister. Onaylanınca hepsini klasörün içine (`kurulum/indirilenler`, `kurulum/araclar`, `kurulum/onbellek`, `node_modules`) indirir, siteyi derler ve tarayıcıda http://localhost:3000 açar. Sonraki çalıştırmalarda yalnızca başlatır. Neyin nereye indiği ekranda ve masaüstündeki `UniCoach-kurulum-gunlugu.txt`'de yazar. Veriler `veri` klasöründedir. Yönetici izni yalnızca Visual C++ çalışma zamanı eksikse istenir.
+
 ## Taşınabilir Windows paketi (kurulumsuz)
 
 Docker, Node.js ya da PostgreSQL kurulu olmayan bir Windows bilgisayarda çalışan tek klasör:

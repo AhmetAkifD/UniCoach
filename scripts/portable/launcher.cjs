@@ -10,14 +10,17 @@ const http = require("node:http");
 const net = require("node:net");
 const path = require("node:path");
 
+// Yollar taşınabilir paketin düzenine göredir; kurulum betiği (kurulum/kurulum.ps1) UC_* ile kaynak klasörünü verir.
 const ROOT = path.resolve(__dirname, "..");
 const NODE = process.execPath;
-const PG_BIN = path.join(ROOT, "runtime", "pgsql", "bin");
-const DATA = path.join(ROOT, "veri");
+const PG_BIN = process.env.UC_PG_BIN ?? path.join(ROOT, "runtime", "pgsql", "bin");
+const DATA = process.env.UC_DATA ?? path.join(ROOT, "veri");
 const PG_DATA = path.join(DATA, "postgres");
 const UPLOADS = path.join(DATA, "uploads");
-const API_DIR = path.join(ROOT, "app", "api");
-const WEB_SERVER = path.join(ROOT, "app", "web", "apps", "web", "server.js");
+const API_DIR = process.env.UC_API_DIR ?? path.join(ROOT, "app", "api");
+const WEB_SERVER = process.env.UC_WEB_SERVER ?? path.join(ROOT, "app", "web", "apps", "web", "server.js");
+// Taşınabilir pakette app/api/node_modules altında, kaynak klasöründe kökteki node_modules'ta.
+const PRISMA_CLI = require.resolve("prisma/build/index.js", { paths: [API_DIR] });
 
 const PG_PORT = 54329;
 const API_PORT = 4000;
@@ -97,7 +100,7 @@ function startPostgres() {
 
 function migrate() {
   log("Veritabanı güncelleniyor…");
-  const res = spawnSync(NODE, [path.join(API_DIR, "node_modules", "prisma", "build", "index.js"), "migrate", "deploy"], {
+  const res = spawnSync(NODE, [PRISMA_CLI, "migrate", "deploy"], {
     cwd: API_DIR,
     env: { ...process.env, DATABASE_URL: DB_URL, PRISMA_HIDE_UPDATE_MESSAGE: "1" },
     encoding: "utf8",

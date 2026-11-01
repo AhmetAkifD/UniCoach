@@ -26,3 +26,9 @@ PDFs/
 
 # Taşınabilir paket çıktısı (scripts/build-portable.mjs)
 dist-portable/
+
+# Kurulum betiğinin indirdikleri ve verileri (kurulum/kurulum.ps1)
+kurulum/indirilenler/
+kurulum/araclar/
+kurulum/onbellek/
+/veri/
