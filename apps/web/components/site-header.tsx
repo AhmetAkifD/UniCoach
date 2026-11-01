@@ -4,6 +4,7 @@ import { ROLE_LABELS, type AuthUser } from "@unicoach/shared";
 import { logoutAction } from "@/app/(auth)/actions";
 import { Badge } from "@/components/ui/badge";
 import { AppMenu } from "./app-menu";
+import { SystemStatus } from "./system-status";
 import { UserAvatar } from "./user-avatar";
 
 export function SiteHeader({ user }: { user: AuthUser }) {
@@ -38,6 +39,7 @@ export function SiteHeader({ user }: { user: AuthUser }) {
         </div>
 
         <div className="ml-auto flex items-center gap-1">
+          <SystemStatus />
           <Link
             href="/profil"
             aria-label="Profil"

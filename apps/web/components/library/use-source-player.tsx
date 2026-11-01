@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ApiError,
   firstUnwatched,
@@ -37,6 +38,7 @@ export function useSourcePlayer(
     videoHeight?: number | null;
   } = {},
 ) {
+  const router = useRouter();
   const [items, setItems] = useState(source.items);
   const [current, setCurrent] = useState(() => firstUnwatched(source.items));
   const [error, setError] = useState<string>();
@@ -163,18 +165,18 @@ export function useSourcePlayer(
       .catch(() => setError("YouTube oynatıcısı yüklenemedi. İnternet bağlantını kontrol et."));
 
     // Sayfadan çıkarken son konumu kaybetme: keepalive ile sayfa kapansa da istek gider.
-    const onPageHide = () => {
+    const onPageHide = async () => {
       const player = playerRef.current;
       const item = itemsRef.current[currentRef.current];
       if (!player || !item) return;
       const positionSec = Math.floor(player.getCurrentTime() || 0);
       if (!positionSec) return;
-      void fetch(`/api/sources/${source.id}/items/${item.id}/progress`, {
+      await fetch(`/api/sources/${source.id}/items/${item.id}/progress`, {
         method: "PUT",
         keepalive: true,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ positionSec }),
-      });
+      }).catch(() => undefined);
     };
     window.addEventListener("pagehide", onPageHide);
 
@@ -182,7 +184,9 @@ export function useSourcePlayer(
       cancelled = true;
       window.removeEventListener("pagehide", onPageHide);
       stopTimer();
-      onPageHide();
+      // Uygulama içinde başka sayfaya geçildi (geri tuşu, ana sayfa): son konum kaydedilince gidilen sayfa yenilenir,
+      // yoksa önbellekteki eski hâli (izlenen video sayıları) görünür.
+      void onPageHide().finally(() => router.refresh());
       playerRef.current?.destroy();
       playerRef.current = null;
       container.replaceChildren();

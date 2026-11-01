@@ -265,9 +265,8 @@ export default function ProgramsScreen() {
       </View>
       {myRank ? (
         <Text size="xs" tone="textSubtle">
-          {filters.scoreType && RESULT_SCORE_LABELS[filters.scoreType]} yerleştirme sıran {formatRank(myRank)}
-          {resultYear ? ` (${resultYear} sonucun)` : ""}. Programlar, sonuç yılına en yakın yılın taban sırasıyla karşılaştırılır; o yıl vurgulanır. Karşılaştırma
-          yalnızca fikir verir.
+          Programlar, sonuç yılına en yakın yılın taban sırasıyla karşılaştırılır; tabloda o yıl vurgulanır. Karşılaştırma yalnızca
+          fikir verir.
         </Text>
       ) : filters.scoreType ? (
         <Text size="xs" tone="textSubtle">

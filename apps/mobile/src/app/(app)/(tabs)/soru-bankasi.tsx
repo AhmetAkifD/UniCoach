@@ -88,7 +88,7 @@ export default function QuestionBankScreen() {
       }
     >
       <View style={{ gap: spacing[4] }}>
-        <Text tone="textMuted">Soru kitaplarının PDF'leri, derslerine ve konularına göre.</Text>
+        <Text tone="textMuted">Kaynaklarını derslere ayrılmış şekilde görüntüle.</Text>
         {books.length > 0 && (
           <Button icon={<Plus size={20} color={colors.onPrimary} />} onPress={upload} style={{ alignSelf: "flex-start" }}>
             PDF yükle

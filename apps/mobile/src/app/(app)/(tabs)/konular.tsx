@@ -88,7 +88,7 @@ export default function LibraryScreen() {
       }
     >
       <View style={{ gap: spacing[4] }}>
-        <Text tone="textMuted">Takip ettiğin YouTube videoları ve oynatma listeleri, derslerine göre.</Text>
+        <Text tone="textMuted">Takip ettiğin hocaları bir arada gör.</Text>
         {sources.length > 0 && (
           <Button icon={<Plus size={20} color={colors.onPrimary} />} onPress={addSource} style={{ alignSelf: "flex-start" }}>
             Kaynak ekle

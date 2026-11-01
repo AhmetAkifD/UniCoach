@@ -90,7 +90,7 @@ export default function TercihScreen() {
     >
       {dialog}
       <View style={{ gap: spacing[4] }}>
-        <Text tone="textMuted">Önce sınav sonucunu ekle. Tercih yaparken puanların ve başarı sıraların buradan kullanılacak.</Text>
+        <Text tone="textMuted">Sınav sonucunu sisteme yükle. Ardından bölümleri keşfet ve tercih listeni oluştur.</Text>
         <View style={{ flexDirection: "row", gap: spacing[3] }}>
           <Button
             variant={results.length ? "primary" : "secondary"}

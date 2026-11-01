@@ -64,7 +64,7 @@ export default function Home() {
         <Text size="2xl" weight="semibold">
           Merhaba {user?.firstName} 👋
         </Text>
-        <Text tone="textMuted">Bugün hangi konuya çalışmak istersin? Küçük adımlar, büyük netler.</Text>
+        <Text tone="textMuted">Bugün hangi konuya çalışmak istersin?</Text>
       </View>
 
       {/* Son biten sınav varsa kart sonucunu açar. */}
@@ -122,7 +122,7 @@ export default function Home() {
             <Container
               key={m.title}
               onPress={m.ready && route ? () => router.navigate(`/${route}`) : undefined}
-              style={{ flexDirection: "row", gap: spacing[4], alignItems: "flex-start" }}
+              style={{ flexDirection: "row", gap: spacing[4], alignItems: "center" }}
             >
               <View style={{ width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.primarySoft, alignItems: "center", justifyContent: "center" }}>
                 <Icon size={20} color={colors.primarySoftText} strokeWidth={1.75} />
@@ -130,9 +130,6 @@ export default function Home() {
               <View style={{ flex: 1, gap: 4 }}>
                 <Text size="lg" weight="semibold">
                   {m.title}
-                </Text>
-                <Text size="sm" tone="textMuted">
-                  {m.description}
                 </Text>
                 {!m.ready && <Badge tone="primary">Mobilde yakında</Badge>}
               </View>
