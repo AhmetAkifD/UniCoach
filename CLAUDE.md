@@ -45,7 +45,7 @@ Paketler `dist/` dizinine derlenir (CommonJS). Uygulamalardan önce `npm run bui
 
 ## Komutlar
 
-**Geliştirme makinesinde Docker kurulu değil** (2026-10-19, disk alanı yetersiz olduğu için kaldırıldı). Docker ile tam kontrol v1.0 yayınlandıktan sonra yapılacak (kullanıcı kararı). Geliştirme doğrudan Windows'a kurulu PostgreSQL 18 ile yapılır (`localhost:5432`, kullanıcı/şifre/veritabanı `unicoach`, kurulum: `scripts/setup-local-db.sql`). Dockerfile ve compose dosyaları korunur ama burada çalıştırılamaz: bunlara dokunan değişiklikler proje tesliminden önce Docker yeniden kurularak `docker compose up --build` ile doğrulanmalıdır.
+**Docker Desktop 2026-11-01'de yeniden kuruldu** (kullanıcı başına kurulum: `%LOCALAPPDATA%\Programs\DockerDesktopesourcesin`; uygulama yeni açılmış bir kabukta değilse PATH'te olmayabilir). `docker compose up --build` v1.0 öncesi doğrulandı. Günlük geliştirme yine doğrudan Windows'a kurulu PostgreSQL 18 ile yapılır (`localhost:5432`, kullanıcı/şifre/veritabanı `unicoach`, kurulum: `scripts/setup-local-db.sql`); Docker'daki veritabanı ayrı bir volume'dadır. Compose 3000 ve 4000 portlarını kullanır: geliştirme sunucuları açıkken başlatılamaz. Next.js'te API'ye bağlı sunucu sayfaları `force-dynamic` olmalı, yoksa Docker derlemesinde (API kapalıyken) statik üretilip o hâlde kalır.
 
 ```bash
 npm install                                   # bağımlılıklar
